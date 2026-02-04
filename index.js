@@ -72,6 +72,11 @@ const TURN_TIME_LIMIT = 60000; // 60 секунд на ход
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
+    // Синхронизация времени - клиент отправляет ping, сервер отвечает с серверным временем
+    socket.on('time_sync', (clientTime, callback) => {
+        callback({ serverTime: Date.now(), clientTime: clientTime });
+    });
+
     // Создание игры
     socket.on('create_game', ({ username, photo_url }) => {
         let roomCode = Math.floor(10000 + Math.random() * 90000).toString();
@@ -114,18 +119,23 @@ io.on('connection', (socket) => {
         room.players.push(newPlayer);
         room.status = 'playing';
         
-        // Старт игры
+        // Запускаем таймер для первого хода (белые)
+        room.turnStartedAt = Date.now();
+        startTurnTimer(roomCode);
+
+        // Старт игры - отправляем с серверным временем начала хода
         io.to(room.players[0].id).emit('start_game', { 
             opponent: { name: newPlayer.name, avatar: newPlayer.avatar }, 
-            color: 'white' 
+            color: 'white',
+            turnStartedAt: room.turnStartedAt,
+            serverTime: Date.now()
         });
         io.to(newPlayer.id).emit('start_game', { 
             opponent: { name: room.players[0].name, avatar: room.players[0].avatar }, 
-            color: 'black' 
+            color: 'black',
+            turnStartedAt: room.turnStartedAt,
+            serverTime: Date.now()
         });
-
-        // Запускаем таймер для первого хода (белые)
-        startTurnTimer(roomCode);
     });
 
     // Ход в шашках
@@ -143,10 +153,17 @@ io.on('connection', (socket) => {
         room.currentTurn = room.currentTurn === 'white' ? 'black' : 'white';
         room.turnStartedAt = Date.now();
 
-        // Отправляем ход сопернику с timestamp
+        // Отправляем ход сопернику с серверным временем
         socket.to(roomCode).emit('opponent_move', { 
             move: move, 
-            timestamp: room.turnStartedAt 
+            turnStartedAt: room.turnStartedAt,
+            serverTime: Date.now()
+        });
+
+        // Подтверждаем ход отправителю с синхронизированным временем
+        socket.emit('move_confirmed', {
+            turnStartedAt: room.turnStartedAt,
+            serverTime: Date.now()
         });
 
         // Запускаем таймер для следующего хода
@@ -160,7 +177,8 @@ io.on('connection', (socket) => {
 
         socket.emit('sync_timer', { 
             turnStartedAt: room.turnStartedAt,
-            currentTurn: room.currentTurn
+            currentTurn: room.currentTurn,
+            serverTime: Date.now()
         });
     });
 
