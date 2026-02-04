@@ -143,6 +143,14 @@ io.on('connection', (socket) => {
         const room = rooms.get(roomCode);
         if (!room) return;
 
+        // Проверяем что ходит правильный игрок
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player || player.color !== room.currentTurn) {
+            console.log(`Invalid move attempt: ${player?.color} tried to move on ${room.currentTurn}'s turn`);
+            socket.emit('sync_state', { currentTurn: room.currentTurn, turnStartedAt: room.turnStartedAt, serverTime: Date.now() });
+            return;
+        }
+
         // Останавливаем текущий таймер
         if (room.turnTimer) {
             clearTimeout(room.turnTimer);
@@ -153,16 +161,18 @@ io.on('connection', (socket) => {
         room.currentTurn = room.currentTurn === 'white' ? 'black' : 'white';
         room.turnStartedAt = Date.now();
 
-        // Отправляем ход сопернику с серверным временем
+        // Отправляем ход сопернику с серверным временем и текущим ходом
         socket.to(roomCode).emit('opponent_move', { 
             move: move, 
             turnStartedAt: room.turnStartedAt,
+            currentTurn: room.currentTurn,
             serverTime: Date.now()
         });
 
         // Подтверждаем ход отправителю с синхронизированным временем
         socket.emit('move_confirmed', {
             turnStartedAt: room.turnStartedAt,
+            currentTurn: room.currentTurn,
             serverTime: Date.now()
         });
 
