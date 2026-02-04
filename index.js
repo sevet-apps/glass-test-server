@@ -17,7 +17,7 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- API РОУТЫ ---
-app.get('/', (req, res) => res.send('Glass API v35.0'));
+app.get('/', (req, res) => res.send('Glass API v36.0'));
 
 app.get('/api/profile/:id', async (req, res) => {
     const { id } = req.params;
@@ -35,7 +35,6 @@ app.post('/save-stat', async (req, res) => {
         if (!user) {
             await supabase.from('users').insert({ telegram_id: user_id, ...updateData });
         } else {
-            // Определяем тип сравнения: меньше лучше (время сапёра) или больше лучше (всё остальное)
             const isTime = game_type.includes('best') && game_type.includes('saper');
             const currentScore = user[game_type];
             let isRecord = false;
@@ -51,7 +50,6 @@ app.post('/save-stat', async (req, res) => {
 
 app.get('/leaderboard', async (req, res) => {
     const { category } = req.query;
-    // Добавлены tower_best и tower_combo
     const allowed = [
         'saper_total', 'saper_wins', 'saper_best_6', 'saper_best_8', 'saper_best_10', 'saper_best_15', 
         'checkers_total', 'checkers_wins_pve', 
@@ -67,13 +65,14 @@ app.get('/leaderboard', async (req, res) => {
     res.json(result);
 });
 
-// --- SOCKET.IO ЛОГИКА (Только шашки) ---
+// --- SOCKET.IO ЛОГИКА (Шашки с таймером) ---
 const rooms = new Map();
+const TURN_TIME_LIMIT = 60000; // 60 секунд на ход
 
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
-    // Создание игры (только шашки)
+    // Создание игры
     socket.on('create_game', ({ username, photo_url }) => {
         let roomCode = Math.floor(10000 + Math.random() * 90000).toString();
         while(rooms.has(roomCode)) { roomCode = Math.floor(10000 + Math.random() * 90000).toString(); }
@@ -87,7 +86,10 @@ io.on('connection', (socket) => {
                 avatar: photo_url,
                 color: 'white'
             }],
-            status: 'waiting'
+            status: 'waiting',
+            currentTurn: 'white',
+            turnStartedAt: null,
+            turnTimer: null
         });
 
         socket.emit('game_created', { roomCode, color: 'white' });
@@ -110,6 +112,7 @@ io.on('connection', (socket) => {
         };
 
         room.players.push(newPlayer);
+        room.status = 'playing';
         
         // Старт игры
         io.to(room.players[0].id).emit('start_game', { 
@@ -120,17 +123,78 @@ io.on('connection', (socket) => {
             opponent: { name: room.players[0].name, avatar: room.players[0].avatar }, 
             color: 'black' 
         });
+
+        // Запускаем таймер для первого хода (белые)
+        startTurnTimer(roomCode);
     });
 
     // Ход в шашках
     socket.on('move', ({ roomCode, move }) => {
-        if (rooms.has(roomCode)) socket.to(roomCode).emit('opponent_move', move);
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        // Останавливаем текущий таймер
+        if (room.turnTimer) {
+            clearTimeout(room.turnTimer);
+            room.turnTimer = null;
+        }
+
+        // Меняем ход
+        room.currentTurn = room.currentTurn === 'white' ? 'black' : 'white';
+        room.turnStartedAt = Date.now();
+
+        // Отправляем ход сопернику с timestamp
+        socket.to(roomCode).emit('opponent_move', { 
+            move: move, 
+            timestamp: room.turnStartedAt 
+        });
+
+        // Запускаем таймер для следующего хода
+        startTurnTimer(roomCode);
+    });
+
+    // Запрос синхронизации таймера (при возвращении в приложение)
+    socket.on('request_sync', ({ roomCode }) => {
+        const room = rooms.get(roomCode);
+        if (!room || !room.turnStartedAt) return;
+
+        socket.emit('sync_timer', { 
+            turnStartedAt: room.turnStartedAt,
+            currentTurn: room.currentTurn
+        });
+    });
+
+    // Игрок сообщает о своём таймауте
+    socket.on('timeout', ({ roomCode }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        const player = room.players.find(p => p.id === socket.id);
+        if (!player) return;
+
+        // Оповещаем соперника о таймауте
+        socket.to(roomCode).emit('opponent_timeout');
+        
+        // Завершаем игру
+        cleanupRoom(roomCode);
+    });
+
+    // Игрок вышел из игры (сдался)
+    socket.on('player_left', ({ roomCode }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
+        socket.to(roomCode).emit('opponent_left');
+        cleanupRoom(roomCode);
     });
 
     // Конец игры
     socket.on('game_over', ({ roomCode, winner }) => {
+        const room = rooms.get(roomCode);
+        if (!room) return;
+
         io.to(roomCode).emit('game_finished', { winner });
-        setTimeout(() => rooms.delete(roomCode), 5000);
+        cleanupRoom(roomCode);
     });
 
     // Отключение
@@ -140,11 +204,55 @@ io.on('connection', (socket) => {
             if (index !== -1) {
                 room.players.splice(index, 1);
                 socket.to(code).emit('opponent_disconnected');
-                rooms.delete(code);
+                cleanupRoom(code);
             }
         });
     });
 });
 
+// Запуск таймера хода
+function startTurnTimer(roomCode) {
+    const room = rooms.get(roomCode);
+    if (!room) return;
+
+    room.turnStartedAt = Date.now();
+
+    // Очищаем предыдущий таймер если есть
+    if (room.turnTimer) {
+        clearTimeout(room.turnTimer);
+    }
+
+    // Устанавливаем таймер на 60 секунд
+    room.turnTimer = setTimeout(() => {
+        const currentRoom = rooms.get(roomCode);
+        if (!currentRoom) return;
+
+        // Находим игрока, у которого вышло время
+        const timedOutPlayer = currentRoom.players.find(p => p.color === currentRoom.currentTurn);
+        const winner = currentRoom.players.find(p => p.color !== currentRoom.currentTurn);
+
+        if (timedOutPlayer && winner) {
+            // Сообщаем проигравшему
+            io.to(timedOutPlayer.id).emit('timeout_loss');
+            // Сообщаем победителю
+            io.to(winner.id).emit('opponent_timeout');
+        }
+
+        cleanupRoom(roomCode);
+    }, TURN_TIME_LIMIT);
+}
+
+// Очистка комнаты
+function cleanupRoom(roomCode) {
+    const room = rooms.get(roomCode);
+    if (room) {
+        if (room.turnTimer) {
+            clearTimeout(room.turnTimer);
+        }
+        rooms.delete(roomCode);
+        console.log(`Room ${roomCode} cleaned up`);
+    }
+}
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Glass API v35.0 running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Glass API v36.0 running on port ${PORT}`));
