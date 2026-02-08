@@ -57,77 +57,31 @@
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-        img { pointer-events: none; } canvas:not(#towerCanvas) { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2147483647 !important; pointer-events: none; }
+        img { pointer-events: none; } canvas:not(#towerCanvas) { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2147483647 !important; pointer-events: none; }
+        
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
         
         body { 
             background-color: var(--bg-color); 
             color: var(--text-color); 
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            width: 100%;
-            height: 100dvh; 
-            overflow: hidden; 
             overscroll-behavior: none; 
             touch-action: none; 
-            transition: background-color 0.4s ease; 
-        }
-        
-        /* Desktop styles - ограничиваем размер приложения */
-        @media (min-width: 600px) {
-            html {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            }
-            body {
-                width: 420px;
-                max-width: 420px;
-                height: 85vh;
-                max-height: 900px;
-                min-height: 600px;
-                border-radius: 24px;
-                box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1);
-                overflow: hidden;
-                position: relative;
-            }
-            #bgPattern {
-                border-radius: 24px;
-            }
-            /* Fixed элементы становятся absolute внутри body */
-            .tab-bar {
-                position: absolute;
-            }
-            .game-overlay {
-                position: absolute;
-                border-radius: 24px;
-            }
-            .game-overlay-bg,
-            .game-overlay #bgPatternGame {
-                border-radius: 24px;
-            }
-            .modal-overlay {
-                position: absolute;
-                border-radius: 24px;
-            }
-            .dropdown-catcher {
-                position: absolute;
-                border-radius: 24px;
-            }
-            .lb-sticky-user {
-                position: absolute;
-            }
-            canvas:not(#towerCanvas) {
-                position: absolute !important;
-                border-radius: 24px;
-            }
+            transition: background-color 0.4s ease;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
         }
         
         /* Background Pattern */
         #bgPattern {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
@@ -163,7 +117,7 @@
         .screen.active { opacity: 1; pointer-events: auto; transform: scale(1); z-index: 1; }
         
         .game-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             background: var(--bg-color); z-index: 9999; 
             display: flex; flex-direction: column; 
             transform: translateY(100%); 
@@ -217,7 +171,7 @@
         .game-area { flex: 1; display: flex; justify-content: center; align-items: center; overflow: hidden; padding-bottom: 20px; position: relative; width: 100%; flex-direction: column; }
 
         .tab-bar { 
-            position: fixed; 
+            position: absolute; 
             bottom: calc(28px + var(--safe-bottom)); 
             left: 50%;
             transform: translateX(-50%);
@@ -295,7 +249,7 @@
             pointer-events: none;
         }
         .dropdown-menu.active { transform: scaleY(1); opacity: 1; pointer-events: auto; }
-        .dropdown-catcher { position: fixed; top:0; left:0; width:100%; height:100%; z-index: 22999; display: none; }
+        .dropdown-catcher { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 22999; display: none; }
         .dropdown-catcher.active { display: block; }
 
         .dd-item { padding: 12px 15px; font-size: 16px; border-radius: 10px; cursor: pointer; margin-bottom: 2px; transition: background 0.2s; }
@@ -313,7 +267,7 @@
         .lb-medal { width: 24px; height: 24px; margin-left: -5px; margin-right: 10px; }
         .rank-1 .lb-rank, .rank-2 .lb-rank, .rank-3 .lb-rank { display: none; }
 
-        .lb-sticky-user { position: fixed; bottom: calc(30px + var(--safe-bottom)); left: 20px; right: 20px; background: var(--accent); color: white; padding: 12px; border-radius: 20px; display: flex; align-items: center; box-shadow: 0 10px 40px rgba(0,122,255,0.4); z-index: 22000; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        .lb-sticky-user { position: absolute; bottom: calc(30px + var(--safe-bottom)); left: 20px; right: 20px; background: var(--accent); color: white; padding: 12px; border-radius: 20px; display: flex; align-items: center; box-shadow: 0 10px 40px rgba(0,122,255,0.4); z-index: 22000; transform: translateY(200%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
         .lb-sticky-user.visible { transform: translateY(0); pointer-events: auto; }
         .lb-sticky-user .lb-rank { color: rgba(255,255,255,0.8); }
         .lb-sticky-user .lb-val { color: rgba(255,255,255,0.9); }
@@ -331,7 +285,7 @@
 
         .toggle-labels { position: absolute; width: 100%; height: 100%; top:0; left:0; display: flex; justify-content: space-between; align-items: center; padding: 0 8px; font-size: 10px; font-weight: 800; color: #8e8e93; pointer-events: none; }
         
-        .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 22500; opacity: 0; pointer-events: none; transition: opacity 0.3s; touch-action: none; } 
+        .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 22500; opacity: 0; pointer-events: none; transition: opacity 0.3s; touch-action: none; } 
         .modal-overlay.visible { opacity: 1; pointer-events: auto; } 
         
         .modal { 
@@ -389,7 +343,7 @@
         .crown-icon { width: 60px; height: 60px; margin-bottom: 10px; fill: #000; [data-theme="dark"] & { fill: #fff; } }
         
         .bottom-controls { 
-            position: fixed; 
+            position: absolute; 
             bottom: calc(40px + var(--safe-bottom)); 
             left: 50%; 
             transform: translateX(-50%); 
@@ -866,16 +820,21 @@
 
         <script>
         const tg = window.Telegram.WebApp; 
-        tg.expand();
+        
+        // Only expand and fullscreen on mobile platforms, not desktop
+        const isMobilePlatform = ['ios', 'android', 'android_x'].includes(tg.platform);
+        
+        if (isMobilePlatform) {
+            tg.expand();
+            if (tg.requestFullscreen) {
+                tg.requestFullscreen();
+            }
+        }
         
         if (tg.isVerticalSwipesEnabled !== undefined) {
             tg.isVerticalSwipesEnabled = false;
         }
         tg.enableClosingConfirmation();
-
-        if (tg.requestFullscreen) {
-            tg.requestFullscreen();
-        }
 
         let isDark = tg.colorScheme === 'dark';
         let isLiteMode = localStorage.getItem('lite_mode') === 'true';
