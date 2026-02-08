@@ -65,6 +65,43 @@ app.get('/leaderboard', async (req, res) => {
     res.json(result);
 });
 
+// Get user ranks for all games
+app.get('/user-ranks', async (req, res) => {
+    const { user_id } = req.query;
+    if (!user_id) return res.json({});
+    
+    const categories = [
+        { key: 'bb_best_score', asc: false },
+        { key: 'saper_best_8', asc: true },
+        { key: 'tower_best', asc: false },
+        { key: 'sudoku_wins', asc: false },
+        { key: 'checkers_wins_pve', asc: false }
+    ];
+    
+    const ranks = {};
+    
+    for (const cat of categories) {
+        const { data } = await supabase
+            .from('users')
+            .select(`telegram_id, ${cat.key}`)
+            .not(cat.key, 'is', null)
+            .gt(cat.key, 0)
+            .order(cat.key, { ascending: cat.asc });
+        
+        if (data) {
+            const idx = data.findIndex(u => String(u.telegram_id) === String(user_id));
+            const userEntry = data.find(u => String(u.telegram_id) === String(user_id));
+            ranks[cat.key] = {
+                rank: idx >= 0 ? idx + 1 : null,
+                score: userEntry ? userEntry[cat.key] : null,
+                total: data.length
+            };
+        }
+    }
+    
+    res.json(ranks);
+});
+
 // --- SOCKET.IO ЛОГИКА (Шашки с таймером) ---
 const rooms = new Map();
 const TURN_TIME_LIMIT = 60000; // 60 секунд на ход
