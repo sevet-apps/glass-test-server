@@ -55,7 +55,8 @@ app.get('/leaderboard', async (req, res) => {
         'checkers_total', 'checkers_wins_pve', 
         'bb_total_games', 'bb_best_score', 
         'sudoku_wins',
-        'tower_best', 'tower_combo'
+        'tower_best', 'tower_combo',
+        'wordle_wins'
     ];
     if (!allowed.includes(category)) return res.json([]); 
     const isTime = category.includes('best') && category.includes('saper');
@@ -75,7 +76,8 @@ app.get('/user-ranks', async (req, res) => {
         { key: 'saper_best_8', asc: true },
         { key: 'tower_best', asc: false },
         { key: 'sudoku_wins', asc: false },
-        { key: 'checkers_wins_pve', asc: false }
+        { key: 'checkers_wins_pve', asc: false },
+        { key: 'wordle_wins', asc: false }
     ];
     
     const ranks = {};
