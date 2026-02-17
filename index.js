@@ -104,6 +104,137 @@ app.get('/user-ranks', async (req, res) => {
     res.json(ranks);
 });
 
+// --- REFERRAL SYSTEM ---
+
+// Register a new referral
+app.post('/register-referral', async (req, res) => {
+    const { user_id, referrer_id, username, photo_url } = req.body;
+    
+    if (!user_id || !referrer_id) {
+        return res.status(400).json({ error: 'Missing user_id or referrer_id' });
+    }
+    
+    // Don't allow self-referral
+    if (user_id === referrer_id) {
+        return res.status(400).json({ error: 'Cannot refer yourself' });
+    }
+    
+    try {
+        // Check if user already exists (not a new user)
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('telegram_id, referred_by')
+            .eq('telegram_id', user_id)
+            .single();
+        
+        // If user already exists and has a referrer, skip
+        if (existingUser && existingUser.referred_by) {
+            return res.json({ success: false, message: 'User already has a referrer' });
+        }
+        
+        // Check if referrer exists
+        const { data: referrer } = await supabase
+            .from('users')
+            .select('telegram_id')
+            .eq('telegram_id', referrer_id)
+            .single();
+        
+        if (!referrer) {
+            // Create referrer if not exists
+            await supabase.from('users').insert({ 
+                telegram_id: referrer_id,
+                referral_count: 1
+            });
+        } else {
+            // Increment referrer's referral_count
+            await supabase.rpc('increment_referral_count', { uid: referrer_id });
+        }
+        
+        // Update or create referred user
+        if (existingUser) {
+            await supabase
+                .from('users')
+                .update({ referred_by: referrer_id })
+                .eq('telegram_id', user_id);
+        } else {
+            await supabase.from('users').insert({
+                telegram_id: user_id,
+                username: username,
+                photo_url: photo_url,
+                referred_by: referrer_id
+            });
+        }
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Referral error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Get referral stats for a user
+app.get('/referral-stats', async (req, res) => {
+    const { user_id } = req.query;
+    
+    if (!user_id) {
+        return res.json({ referral_count: 0, rank: null });
+    }
+    
+    try {
+        // Get user's referral count
+        const { data: user } = await supabase
+            .from('users')
+            .select('referral_count')
+            .eq('telegram_id', user_id)
+            .single();
+        
+        const referralCount = user?.referral_count || 0;
+        
+        // Get rank (position among all users by referral_count)
+        const { data: allUsers } = await supabase
+            .from('users')
+            .select('telegram_id, referral_count')
+            .gt('referral_count', 0)
+            .order('referral_count', { ascending: false });
+        
+        let rank = null;
+        if (allUsers && referralCount > 0) {
+            const idx = allUsers.findIndex(u => String(u.telegram_id) === String(user_id));
+            if (idx >= 0) rank = idx + 1;
+        }
+        
+        res.json({ referral_count: referralCount, rank: rank });
+    } catch (e) {
+        console.error('Referral stats error:', e);
+        res.json({ referral_count: 0, rank: null });
+    }
+});
+
+// Get referral leaderboard
+app.get('/referral-leaderboard', async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('telegram_id, username, photo_url, referral_count')
+            .gt('referral_count', 0)
+            .order('referral_count', { ascending: false })
+            .limit(50);
+        
+        if (error) return res.json([]);
+        
+        const result = data.map(u => ({
+            user_id: u.telegram_id,
+            username: u.username,
+            photo_url: u.photo_url,
+            score: u.referral_count
+        }));
+        
+        res.json(result);
+    } catch (e) {
+        res.json([]);
+    }
+});
+
 // --- SOCKET.IO ЛОГИКА (Шашки с таймером) ---
 const rooms = new Map();
 const TURN_TIME_LIMIT = 60000; // 60 секунд на ход
