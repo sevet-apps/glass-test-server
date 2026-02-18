@@ -110,6 +110,8 @@ app.get('/user-ranks', async (req, res) => {
 app.post('/register-referral', async (req, res) => {
     const { user_id, referrer_id, username, photo_url } = req.body;
     
+    console.log('Register referral request:', { user_id, referrer_id, username });
+    
     if (!user_id || !referrer_id) {
         return res.status(400).json({ error: 'Missing user_id or referrer_id' });
     }
@@ -120,54 +122,70 @@ app.post('/register-referral', async (req, res) => {
     }
     
     try {
-        // Check if user already exists (not a new user)
+        // Check if user already exists and has a referrer
         const { data: existingUser } = await supabase
             .from('users')
             .select('telegram_id, referred_by')
             .eq('telegram_id', user_id)
             .single();
         
-        // If user already exists and has a referrer, skip
+        // If user already has a referrer, skip
         if (existingUser && existingUser.referred_by) {
+            console.log('User already has a referrer, skipping');
             return res.json({ success: false, message: 'User already has a referrer' });
         }
         
-        // Check if referrer exists
-        const { data: referrer } = await supabase
-            .from('users')
-            .select('telegram_id')
-            .eq('telegram_id', referrer_id)
-            .single();
-        
-        if (!referrer) {
-            // Create referrer if not exists
-            await supabase.from('users').insert({ 
-                telegram_id: referrer_id,
-                referral_count: 1
-            });
-        } else {
-            // Increment referrer's referral_count
-            await supabase.rpc('increment_referral_count', { uid: referrer_id });
-        }
-        
-        // Update or create referred user
+        // Update or create the referred user with referrer info
         if (existingUser) {
+            // User exists but no referrer yet - update
             await supabase
                 .from('users')
                 .update({ referred_by: referrer_id })
                 .eq('telegram_id', user_id);
+            console.log('Updated existing user with referrer');
         } else {
+            // New user - create with referrer
             await supabase.from('users').insert({
                 telegram_id: user_id,
                 username: username,
                 photo_url: photo_url,
-                referred_by: referrer_id
+                referred_by: referrer_id,
+                referral_count: 0
             });
+            console.log('Created new user with referrer');
+        }
+        
+        // Now increment the referrer's count
+        // First check if referrer exists
+        const { data: referrer } = await supabase
+            .from('users')
+            .select('telegram_id, referral_count')
+            .eq('telegram_id', referrer_id)
+            .single();
+        
+        if (referrer) {
+            // Increment referral_count directly
+            const newCount = (referrer.referral_count || 0) + 1;
+            await supabase
+                .from('users')
+                .update({ referral_count: newCount })
+                .eq('telegram_id', referrer_id);
+            console.log('Incremented referrer count to', newCount);
+        } else {
+            // Create referrer user with count 1
+            await supabase.from('users').insert({ 
+                telegram_id: referrer_id,
+                referral_count: 1
+            });
+            console.log('Created referrer with count 1');
         }
         
         res.json({ success: true });
     } catch (e) {
         console.error('Referral error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
         res.status(500).json({ error: e.message });
     }
 });
