@@ -435,19 +435,9 @@
             border: 1px solid var(--glass-border);
         }
         .subscription-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #007AFF, #5856D6);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-        .subscription-icon svg {
-            width: 40px;
-            height: 40px;
-            color: white;
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px;
         }
         .subscription-title {
             font-size: 22px;
@@ -542,7 +532,7 @@
         /* Toast notification */
         .toast {
             position: fixed;
-            bottom: calc(120px + var(--safe-bottom));
+            bottom: calc(112px + var(--safe-bottom));
             left: 15px;
             right: 15px;
             background: var(--bg-color);
@@ -1448,11 +1438,7 @@
     <!-- Subscription Required Modal -->
     <div class="subscription-overlay" id="subscriptionModal">
         <div class="subscription-modal">
-            <div class="subscription-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
-            </div>
+            <div class="subscription-icon" id="subscriptionLottie"></div>
             <div class="subscription-title">Подпишитесь на канал</div>
             <div class="subscription-text">
                 Чтобы играть, подпишитесь на наш новостной канал. Там только полезная информация о новых обновлениях и развитии приложения.
@@ -1523,6 +1509,8 @@
         const COLOR_MAP = { 'bb-c-1':'#ff3b30', 'bb-c-2':'#ff9500', 'bb-c-3':'#ffcc00', 'bb-c-4':'#34c759', 'bb-c-5':'#007aff', 'bb-c-6':'#5856d6', 'bb-c-7':'#af52de' };
 
         // --- SUBSCRIPTION CHECK ---
+        let subscriptionLottie = null;
+        
         async function checkSubscriptionOnStart() {
             const user = tg.initDataUnsafe.user;
             if (!user) {
@@ -1537,6 +1525,14 @@
                 
                 if (!isSubscribed) {
                     document.getElementById('subscriptionModal').classList.add('visible');
+                    // Запускаем Lottie глобус
+                    subscriptionLottie = lottie.loadAnimation({
+                        container: document.getElementById('subscriptionLottie'),
+                        renderer: 'svg',
+                        loop: true,
+                        autoplay: true,
+                        path: 'globus.json'
+                    });
                 }
             } catch (e) {
                 console.log('Subscription check failed:', e);
@@ -2512,7 +2508,7 @@
         function checkAllClear() { if(bbIsAnimating) return; const free = countFreeCells(); if(free === BB_ROWS * BB_COLS) { bbIsAnimating = true; tg.HapticFeedback.notificationOccurred('success'); const bonus = 500 * (bbCombo > 0 ? bbCombo : 1); let delay = 0; for(let r=BB_ROWS-1; r>=0; r--) { setTimeout(() => { for(let c=0; c<BB_COLS; c++) { const cell = document.querySelector(`.bb-cell[data-r="${r}"][data-c="${c}"]`); const randColor = COLORS[Math.floor(Math.random()*COLORS.length)]; cell.className = `bb-cell filled ${randColor}`; } tg.HapticFeedback.impactOccurred('light'); }, delay); delay += 50; } setTimeout(() => { for(let r=0; r<BB_ROWS; r++) { for(let c=0; c<BB_COLS; c++) { const cell = document.querySelector(`.bb-cell[data-r="${r}"][data-c="${c}"]`); cell.className = 'bb-cell clearing'; } } setTimeout(() => { renderBBGrid(); }, 200); const container = document.querySelector('.bb-game-container'); const pop = document.createElement('div'); pop.className = 'all-clear-popup'; pop.innerHTML = `<div class="ac-text">UNBELIEVABLE</div><div class="ac-score">+${bonus}</div>`; container.appendChild(pop); confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 }, zIndex: 11000 }); addScore(bonus); setTimeout(() => { pop.remove(); bbIsAnimating = false; saveBBState(); }, 2000); }, delay + 200); } }
         async function checkGameOver() { if(bbIsAnimating) return; const shapesLeft = bbShapes.filter(s => s !== null); if(shapesLeft.length === 0) return; const canMove = shapesLeft.some(s => { for(let r=0; r<BB_ROWS; r++) { for(let c=0; c<BB_COLS; c++) { if(canPlace(s.matrix, r, c)) return true; } } return false; }); if(!canMove) { tg.HapticFeedback.notificationOccurred('error'); await animateGameOverFill(); const currentBest = parseInt(localStorage.getItem('bb_best_score') || 0); const isRecord = bbScore > currentBest; if(isRecord) { saveStatToCloud('bb_best_score', bbScore); sendStatToBackend('bb_best_score', bbScore); } localStorage.removeItem('bb_state'); let t = parseInt(localStorage.getItem('bb_total_games')||0)+1; saveStatToCloud('bb_total_games', t); sendStatToBackend('bb_total_games', t); showBBGameOverModal(isRecord, bbScore, currentBest); } }
         function animateGameOverFill() { return new Promise(resolve => { const emptyCells = []; for(let r=BB_ROWS-1; r>=0; r--) { for(let c=0; c<BB_COLS; c++) { if(bbGrid[r][c] === 0) { const cell = document.querySelector(`.bb-cell[data-r="${r}"][data-c="${c}"]`); emptyCells.push(cell); } } } let i = 0; const int = setInterval(() => { if(i >= emptyCells.length) { clearInterval(int); setTimeout(resolve, 300); return; } const cell = emptyCells[i]; const color = COLORS[Math.floor(Math.random() * COLORS.length)]; if(cell) cell.classList.add('filled', color); i++; }, 10); }); }
-        function showBBGameOverModal(isRecord, score, oldBest) { const modal = document.getElementById('bbGameOverContent'); const overlay = document.getElementById('modalBBGameOver'); modal.innerHTML = ''; if(isRecord) { confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, zIndex: 22000 }); modal.innerHTML = `${ICON_CROWN}<h2 style="margin:0 0 10px 0; font-size:24px;">Новый Рекорд!</h2><div style="font-size:48px; font-weight:800; color:var(--accent); margin:10px 0;" id="recCounter">0</div><button class="btn-main" onclick="closeResult(); newGameBB();">Играть снова</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="closeResult(); closeGame('bb');">Выйти</button>`; let s = oldBest; const step = Math.ceil((score - oldBest) / 30); const counter = document.getElementById('recCounter'); const int = setInterval(() => { s += step; if(s >= score) { s = score; clearInterval(int); } counter.innerText = s; }, 30); } else { modal.innerHTML = `<h2 style="margin:0 0 5px 0;">Рекорд не побит</h2><p style="color:#8e8e93; margin:0 0 20px 0;">Попробуйте еще раз!</p><div style="font-size:32px; font-weight:700;">${score}</div><div style="font-size:14px; color:#8e8e93; margin-bottom:20px;">Лучший: ${oldBest}</div><button class="btn-main" onclick="closeResult(); newGameBB();">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="closeResult(); closeGame('bb');">Выйти</button>`; } overlay.classList.add('visible'); }
+        function showBBGameOverModal(isRecord, score, oldBest) { const modal = document.getElementById('bbGameOverContent'); const overlay = document.getElementById('modalBBGameOver'); modal.innerHTML = ''; if(isRecord) { confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, zIndex: 22000 }); modal.innerHTML = `<div id="bbRecordLottie" style="width:80px;height:80px;margin:0 auto 10px;"></div><h2 style="margin:0 0 10px 0; font-size:24px;">Новый Рекорд!</h2><div style="font-size:48px; font-weight:800; color:var(--accent); margin:10px 0;" id="recCounter">0</div><button class="btn-main" onclick="closeResult(); newGameBB();">Играть снова</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="closeResult(); closeGame('bb');">Выйти</button>`; lottie.loadAnimation({ container: document.getElementById('bbRecordLottie'), renderer: 'svg', loop: true, autoplay: true, path: 'top.json' }); let s = oldBest; const step = Math.ceil((score - oldBest) / 30); const counter = document.getElementById('recCounter'); const int = setInterval(() => { s += step; if(s >= score) { s = score; clearInterval(int); } counter.innerText = s; }, 30); } else { modal.innerHTML = `<h2 style="margin:0 0 5px 0;">Рекорд не побит</h2><p style="color:#8e8e93; margin:0 0 20px 0;">Попробуйте еще раз!</p><div style="font-size:32px; font-weight:700;">${score}</div><div style="font-size:14px; color:#8e8e93; margin-bottom:20px;">Лучший: ${oldBest}</div><button class="btn-main" onclick="closeResult(); newGameBB();">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="closeResult(); closeGame('bb');">Выйти</button>`; } overlay.classList.add('visible'); }
         function saveBBState() { if(bbShapes.every(s=>s===null)) return; const state = { grid: bbGrid, score: bbScore, shapes: bbShapes, combo: bbCombo, buffer: bbComboBuffer }; localStorage.setItem('bb_state', JSON.stringify(state)); }
         function restoreBBState() { const data = JSON.parse(localStorage.getItem('bb_state')); if(!data) { initBB(); return; } bbGrid = data.grid; bbScore = data.score; bbCombo = data.combo || 0; bbComboBuffer = data.buffer || 0; bbDisplayedScore = bbScore; bbShapes = data.shapes; updateBBScoreUI(); document.getElementById('bbBestScore').innerText = localStorage.getItem('bb_best_score') || 0; renderBBGrid(); for(let i=0; i<3; i++) { if(bbShapes[i]) renderShapePreview(i, bbShapes[i].matrix, bbShapes[i].color); else document.getElementById(`shape${i}`).innerHTML = ''; } }
         function showResult(title, text, btnText="Закрыть", action=null) { document.getElementById('resTitle').innerText=title; document.getElementById('resText').innerText=text; const btn=document.getElementById('resBtn'); btn.innerText=btnText; btn.onclick=action?action:closeResult; document.getElementById('modalResult').classList.add('visible'); }
@@ -2824,7 +2820,7 @@
             
             let html = '';
             if(isScoreRecord && twScore > 0) {
-                html = `${ICON_CROWN}<h2 style="margin:0 0 5px 0;">Новый рекорд!</h2>
+                html = `<div id="towerRecordLottie" style="width:80px;height:80px;margin:0 auto 10px;"></div><h2 style="margin:0 0 5px 0;">Новый рекорд!</h2>
                 <div style="font-size:14px; color:#8e8e93; margin-bottom:10px;">Вы построили огромную башню!</div>
                 <div style="font-size:56px; font-weight:200; color:var(--accent); line-height:1;">${twScore}</div>
                 <div style="font-size:14px; color:#8e8e93; margin-top:10px;">Чистая серия: ${twMaxComboThisGame}${isComboRecord ? ' 🔥' : ''}</div>
@@ -2842,6 +2838,18 @@
             html += `<button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="twExitGame()">Выйти</button>`;
             
             modal.innerHTML = html;
+            
+            // Initialize Lottie for record
+            if(isScoreRecord && twScore > 0) {
+                lottie.loadAnimation({
+                    container: document.getElementById('towerRecordLottie'),
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    path: 'top.json'
+                });
+            }
+            
             setTimeout(() => overlay.classList.add('visible'), 500);
         }
 
