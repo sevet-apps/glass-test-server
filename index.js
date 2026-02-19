@@ -16,8 +16,47 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Telegram Bot Token for subscription check
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const REQUIRED_CHANNEL = process.env.REQUIRED_CHANNEL || '@spark_games_news'; // Замени на свой канал
+
 // --- API РОУТЫ ---
-app.get('/', (req, res) => res.send('Glass API v36.0'));
+app.get('/', (req, res) => res.send('Glass API v37.0'));
+
+// Check if user is subscribed to the required channel
+app.get('/check-subscription', async (req, res) => {
+    const { user_id } = req.query;
+    
+    if (!user_id) {
+        return res.json({ subscribed: false, error: 'No user_id provided' });
+    }
+    
+    if (!BOT_TOKEN) {
+        console.log('BOT_TOKEN not set, skipping subscription check');
+        return res.json({ subscribed: true }); // Skip check if no token
+    }
+    
+    try {
+        const url = `https://api.telegram.org/bot${BOT_TOKEN}/getChatMember?chat_id=${REQUIRED_CHANNEL}&user_id=${user_id}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.ok) {
+            const status = data.result.status;
+            // member, administrator, creator = subscribed
+            // left, kicked, restricted = not subscribed
+            const subscribed = ['member', 'administrator', 'creator'].includes(status);
+            return res.json({ subscribed, status });
+        } else {
+            console.log('Telegram API error:', data);
+            // If error (e.g., user never interacted with bot), assume not subscribed
+            return res.json({ subscribed: false, error: data.description });
+        }
+    } catch (e) {
+        console.error('Subscription check error:', e);
+        return res.json({ subscribed: true }); // On error, allow access
+    }
+});
 
 app.get('/api/profile/:id', async (req, res) => {
     const { id } = req.params;
@@ -183,9 +222,6 @@ app.post('/register-referral', async (req, res) => {
         res.json({ success: true });
     } catch (e) {
         console.error('Referral error:', e);
-        res.status(500).json({ error: e.message });
-    }
-});
         res.status(500).json({ error: e.message });
     }
 });
