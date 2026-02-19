@@ -542,7 +542,7 @@
         /* Toast notification */
         .toast {
             position: fixed;
-            bottom: calc(100px + var(--safe-bottom));
+            bottom: calc(120px + var(--safe-bottom));
             left: 15px;
             right: 15px;
             background: var(--bg-color);
@@ -1568,14 +1568,14 @@
                     isSubscribed = true;
                     document.getElementById('subscriptionModal').classList.remove('visible');
                     tg.HapticFeedback.notificationOccurred('success');
-                    showToast('Добро пожаловать!', 'success');
+                    showToast('Добро пожаловать!', 'welcome');
                 } else {
                     tg.HapticFeedback.notificationOccurred('error');
-                    showToast('Вы не подписаны на канал', 'error');
+                    // Не показываем toast, так как модалка всё равно видна
                 }
             } catch (e) {
                 console.log('Subscription check failed:', e);
-                showToast('Ошибка проверки', 'error');
+                // Не показываем toast об ошибке
             }
             
             btn.classList.remove('loading');
@@ -1864,6 +1864,7 @@
         
         const TOAST_ICON_ERROR = `<div class="toast-icon error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
         
+        // type: 'success' (галочка), 'welcome' (рука), 'error' (крестик)
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             
@@ -1888,7 +1889,8 @@
                 toastLottie = null;
             }
             
-            if (type === 'success') {
+            if (type === 'success' || type === 'welcome') {
+                const animationFile = type === 'welcome' ? 'wave_hand.json' : 'checkmark.json';
                 toast.innerHTML = `<div class="toast-lottie" id="toastLottie"></div><span>${message}</span>`;
                 toastVisible = true;
                 
@@ -1898,9 +1900,9 @@
                     toastLottie = lottie.loadAnimation({
                         container: document.getElementById('toastLottie'),
                         renderer: 'svg',
-                        loop: false,
+                        loop: type === 'welcome', // Рука машет в цикле
                         autoplay: true,
-                        path: 'checkmark.json'
+                        path: animationFile
                     });
                 });
             } else {
