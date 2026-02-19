@@ -6,7 +6,8 @@
     <title>Glass App v35.0</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script> 
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <style>
         :root { 
             --bg-color: #f2f2f7; 
@@ -546,11 +547,14 @@
             right: 15px;
             background: var(--bg-color);
             color: var(--text-color);
-            padding: 16px 20px;
+            padding: 12px 20px;
             border-radius: 14px;
             font-size: 16px;
             font-weight: 600;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             border: 1px solid var(--glass-border);
             z-index: 25000;
@@ -562,6 +566,28 @@
         .toast.visible {
             transform: translateY(0);
             opacity: 1;
+        }
+        .toast-lottie {
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .toast-icon.error {
+            background: linear-gradient(135deg, #FF3B30, #FF453A);
+        }
+        .toast-icon svg {
+            width: 14px;
+            height: 14px;
+            color: white;
         }
 
         .modal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 22500; opacity: 0; pointer-events: none; transition: opacity 0.3s; touch-action: none; } 
@@ -1542,14 +1568,14 @@
                     isSubscribed = true;
                     document.getElementById('subscriptionModal').classList.remove('visible');
                     tg.HapticFeedback.notificationOccurred('success');
-                    showToast('Добро пожаловать!');
+                    showToast('Добро пожаловать!', 'success');
                 } else {
                     tg.HapticFeedback.notificationOccurred('error');
-                    showToast('Вы не подписаны на канал');
+                    showToast('Вы не подписаны на канал', 'error');
                 }
             } catch (e) {
                 console.log('Subscription check failed:', e);
-                showToast('Ошибка проверки');
+                showToast('Ошибка проверки', 'error');
             }
             
             btn.classList.remove('loading');
@@ -1834,8 +1860,11 @@
         
         let toastTimeout = null;
         let toastVisible = false;
+        let toastLottie = null;
         
-        function showToast(message) {
+        const TOAST_ICON_ERROR = `<div class="toast-icon error"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>`;
+        
+        function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             
             // Если уже показывается — просто обновим таймер, не трогая анимацию
@@ -1845,23 +1874,53 @@
                     toast.classList.remove('visible');
                     toastVisible = false;
                     toastTimeout = null;
-                }, 2000);
+                    if (toastLottie) {
+                        toastLottie.destroy();
+                        toastLottie = null;
+                    }
+                }, 2500);
                 return;
             }
             
-            toast.innerText = message;
-            toastVisible = true;
+            // Уничтожаем предыдущую анимацию если есть
+            if (toastLottie) {
+                toastLottie.destroy();
+                toastLottie = null;
+            }
             
-            // Показываем
-            requestAnimationFrame(() => {
-                toast.classList.add('visible');
-            });
+            if (type === 'success') {
+                toast.innerHTML = `<div class="toast-lottie" id="toastLottie"></div><span>${message}</span>`;
+                toastVisible = true;
+                
+                requestAnimationFrame(() => {
+                    toast.classList.add('visible');
+                    // Запускаем Lottie анимацию
+                    toastLottie = lottie.loadAnimation({
+                        container: document.getElementById('toastLottie'),
+                        renderer: 'svg',
+                        loop: false,
+                        autoplay: true,
+                        path: 'checkmark.json'
+                    });
+                });
+            } else {
+                toast.innerHTML = `${TOAST_ICON_ERROR}<span>${message}</span>`;
+                toastVisible = true;
+                
+                requestAnimationFrame(() => {
+                    toast.classList.add('visible');
+                });
+            }
             
             toastTimeout = setTimeout(() => {
                 toast.classList.remove('visible');
                 toastVisible = false;
                 toastTimeout = null;
-            }, 2000);
+                if (toastLottie) {
+                    toastLottie.destroy();
+                    toastLottie = null;
+                }
+            }, 2500);
         }
         
         function copyReferralLink() {
@@ -1870,7 +1929,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(link).then(() => {
                     tg.HapticFeedback.notificationOccurred('success');
-                    showToast('Ссылка скопирована!');
+                    showToast('Ссылка скопирована!', 'success');
                 }).catch(() => {
                     fallbackCopy(link);
                 });
@@ -1889,9 +1948,9 @@
             try {
                 document.execCommand('copy');
                 tg.HapticFeedback.notificationOccurred('success');
-                showToast('Ссылка скопирована!');
+                showToast('Ссылка скопирована!', 'success');
             } catch (e) {
-                showToast('Не удалось скопировать');
+                showToast('Не удалось скопировать', 'error');
             }
             document.body.removeChild(textarea);
         }
