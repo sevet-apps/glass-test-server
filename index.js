@@ -509,41 +509,52 @@ function cleanupRoom(roomCode) {
 // --- TELEGRAM BOT INLINE MODE ---
 const TelegramBot = require('node-telegram-bot-api');
 
-// Конфигурация игр для inline режима
-const GAME_CONFIG = {
-    'block blast': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
-    'bb': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
-    'блок бласт': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
-    'сапер': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
-    'saper': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
-    'minesweeper': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
-    'башня': { column: 'tower_best', name: 'Башня', emoji: '🏗️', isHigherBetter: true },
-    'tower': { column: 'tower_best', name: 'Башня', emoji: '🏗️', isHigherBetter: true },
-    'судоку': { column: 'sudoku_wins', name: 'Судоку', emoji: '🔢', isHigherBetter: true },
-    'sudoku': { column: 'sudoku_wins', name: 'Судоку', emoji: '🔢', isHigherBetter: true },
-    'шашки': { column: 'checkers_wins_pve', name: 'Шашки', emoji: '🎯', isHigherBetter: true },
-    'checkers': { column: 'checkers_wins_pve', name: 'Шашки', emoji: '🎯', isHigherBetter: true },
-    'вордли': { column: 'wordle_wins', name: 'Вордли', emoji: '📝', isHigherBetter: true },
-    'wordle': { column: 'wordle_wins', name: 'Вордли', emoji: '📝', isHigherBetter: true },
-    'рефералы': { column: 'referral_count', name: 'Рефералы', emoji: '👥', isHigherBetter: true },
-    'referrals': { column: 'referral_count', name: 'Рефералы', emoji: '👥', isHigherBetter: true },
+// Premium эмодзи ID
+const EMOJI = {
+    first: '<tg-emoji emoji-id="5440539497383087970">🥇</tg-emoji>',
+    second: '<tg-emoji emoji-id="5447203607294265305">🥈</tg-emoji>',
+    third: '<tg-emoji emoji-id="5453902265922376865">🥉</tg-emoji>',
+    sparkle: '<tg-emoji emoji-id="5325547803936572038">✨</tg-emoji>',
+    game: '<tg-emoji emoji-id="5361741454685256344">🎮</tg-emoji>',
+    play: '<tg-emoji emoji-id="5427168083074628963">▶️</tg-emoji>',
+    chart: '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>',
 };
 
-// Получить топ-5 + пользователя
+// Конфигурация игр для inline режима
+const GAME_CONFIG = {
+    'block blast': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
+    'bb': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
+    'блок бласт': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
+    'сапер': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
+    'saper': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
+    'minesweeper': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
+    'башня': { column: 'tower_best', name: 'Башня', isHigherBetter: true },
+    'tower': { column: 'tower_best', name: 'Башня', isHigherBetter: true },
+    'судоку': { column: 'sudoku_wins', name: 'Судоку', isHigherBetter: true },
+    'sudoku': { column: 'sudoku_wins', name: 'Судоку', isHigherBetter: true },
+    'шашки': { column: 'checkers_wins_pve', name: 'Шашки', isHigherBetter: true },
+    'checkers': { column: 'checkers_wins_pve', name: 'Шашки', isHigherBetter: true },
+    'вордли': { column: 'wordle_wins', name: 'Вордли', isHigherBetter: true },
+    'wordle': { column: 'wordle_wins', name: 'Вордли', isHigherBetter: true },
+    'рефералы': { column: 'referral_count', name: 'Рефералы', isHigherBetter: true },
+    'referrals': { column: 'referral_count', name: 'Рефералы', isHigherBetter: true },
+};
+
+// Получить топ-3 + пользователя
 async function getTopForGame(gameConfig, userId) {
-    const { column, name, emoji, isHigherBetter } = gameConfig;
+    const { column, name, isHigherBetter } = gameConfig;
     
-    // Получаем топ-5
-    const { data: top5 } = await supabase
+    // Получаем топ-3
+    const { data: top3 } = await supabase
         .from('users')
         .select(`telegram_id, username, ${column}`)
         .not(column, 'is', null)
         .gt(column, 0)
         .order(column, { ascending: !isHigherBetter })
-        .limit(5);
+        .limit(3);
     
-    if (!top5 || top5.length === 0) {
-        return { text: `${emoji} ${name}\n\nПока нет результатов`, userRank: null };
+    if (!top3 || top3.length === 0) {
+        return { text: `<b>${name}</b>\n\nПока нет результатов`, userRank: null };
     }
     
     // Получаем все для определения места пользователя
@@ -566,41 +577,33 @@ async function getTopForGame(gameConfig, userId) {
     }
     
     // Формируем текст
-    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-    let text = `${emoji} <b>${name} - Топ игроков</b>\n\n`;
+    const medals = [EMOJI.first, EMOJI.second, EMOJI.third];
+    let text = `<b>${name} — Топ игроков</b>\n\n`;
     
-    top5.forEach((user, index) => {
+    top3.forEach((user, index) => {
         const medal = medals[index];
         const score = user[column];
         const username = user.username || 'Игрок';
         text += `${medal} ${username} — <b>${score}</b>\n`;
     });
     
-    // Добавляем информацию о пользователе если он не в топ-5
-    if (userRank && userRank > 5 && userData) {
+    // Добавляем информацию о пользователе если он не в топ-3
+    if (userRank && userRank > 3 && userData) {
         text += `\n━━━━━━━━━━━━━━━\n`;
         text += `📍 Вы: #${userRank} — <b>${userData[column]}</b>`;
-    } else if (userRank && userRank <= 5) {
-        text += `\n✨ Вы в топ-${userRank}!`;
+    } else if (userRank && userRank <= 3) {
+        text += `\n${EMOJI.sparkle} Вы в топ-${userRank}!`;
     }
     
     return { text, userRank };
 }
 
-// URL сервера для webhook (замени на свой Render URL)
-const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://glass-api-kh3s.onrender.com';
+// URL Mini App
+const WEBAPP_URL = 'https://sevet-apps.github.io/glass-games/';
 
 // Инициализация бота
-let bot = null;
 if (BOT_TOKEN) {
-    bot = new TelegramBot(BOT_TOKEN);
-    
-    // Устанавливаем webhook
-    bot.setWebHook(`${WEBHOOK_URL}/bot${BOT_TOKEN}`).then(() => {
-        console.log('Telegram Bot webhook set to:', `${WEBHOOK_URL}/bot${BOT_TOKEN}`);
-    }).catch(err => {
-        console.error('Failed to set webhook:', err.message);
-    });
+    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
     
     // Обработка inline запросов
     bot.on('inline_query', async (query) => {
@@ -614,10 +617,10 @@ if (BOT_TOKEN) {
             results.push({
                 type: 'article',
                 id: 'help',
-                title: '🎮 Spark Games - Топы',
-                description: 'Введите название игры: block blast, сапер, башня, судоку, шашки, вордли',
+                title: '🎮 Spark Games — Топы',
+                description: 'Введите название игры: Block Blast, Сапёр, Башня, Судоку, Шашки, Вордли',
                 input_message_content: {
-                    message_text: '🎮 <b>Spark Games</b>\n\nДоступные топы:\n• block blast\n• сапер\n• башня\n• судоку\n• шашки\n• вордли\n• рефералы\n\nНапишите: @spark_beta_bot [игра]',
+                    message_text: `${EMOJI.game} <b>Spark Games</b>\n\nДоступные топы:\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n• Рефералы\n\n${EMOJI.chart} Напишите: @spark_beta_bot [игра]`,
                     parse_mode: 'HTML'
                 }
             });
@@ -638,7 +641,7 @@ if (BOT_TOKEN) {
                     results.push({
                         type: 'article',
                         id: `top_${matchedGame.column}`,
-                        title: `${matchedGame.emoji} Топ ${matchedGame.name}`,
+                        title: `Топ ${matchedGame.name}`,
                         description: 'Нажмите чтобы отправить топ в чат',
                         input_message_content: {
                             message_text: text,
@@ -650,12 +653,14 @@ if (BOT_TOKEN) {
                 }
             } else {
                 // Предлагаем варианты
+                const suggested = new Set();
                 for (const [key, config] of Object.entries(GAME_CONFIG)) {
-                    if (key.includes(queryText) || config.name.toLowerCase().includes(queryText)) {
+                    if ((key.includes(queryText) || config.name.toLowerCase().includes(queryText)) && !suggested.has(config.column)) {
+                        suggested.add(config.column);
                         results.push({
                             type: 'article',
                             id: `suggest_${config.column}`,
-                            title: `${config.emoji} ${config.name}`,
+                            title: `${config.name}`,
                             description: `Показать топ ${config.name}`,
                             input_message_content: {
                                 message_text: `Загрузка топа ${config.name}...`,
@@ -678,33 +683,25 @@ if (BOT_TOKEN) {
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
         bot.sendMessage(chatId, 
-            '🎮 <b>Добро пожаловать в Spark Games!</b>\n\n' +
-            'Играйте в крутые игры и соревнуйтесь с друзьями!\n\n' +
-            '📱 <b>Открыть игры:</b> нажмите кнопку ниже\n' +
-            '📊 <b>Топы:</b> напишите @spark_beta_bot в любом чате',
+            `${EMOJI.game} <b>Добро пожаловать в Spark Games!</b>\n\n` +
+            `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
+            `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
+            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [[
-                        { text: '🎮 Играть', web_app: { url: 'https://sevet.github.io/glass/' } }
+                        { text: '🎮 Играть', web_app: { url: WEBAPP_URL } }
                     ]]
                 }
             }
         );
     });
     
-    console.log('Telegram Bot initialized with webhook mode');
+    console.log('Telegram Bot initialized with inline mode');
 } else {
     console.log('BOT_TOKEN not set, Telegram Bot disabled');
 }
-
-// Webhook endpoint для Telegram
-app.post(`/bot${BOT_TOKEN}`, (req, res) => {
-    if (bot) {
-        bot.processUpdate(req.body);
-    }
-    res.sendStatus(200);
-});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Glass API v37.0 running on port ${PORT}`));
