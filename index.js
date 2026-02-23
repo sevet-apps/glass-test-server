@@ -520,11 +520,22 @@ const EMOJI = {
     chart: '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>',
 };
 
+// Обычные эмодзи для inline (Premium не поддерживается)
+const EMOJI_INLINE = {
+    first: '🥇',
+    second: '🥈',
+    third: '🥉',
+    sparkle: '✨',
+    game: '🎮',
+    chart: '📊',
+};
+
 // Конфигурация игр для inline режима
 const GAME_CONFIG = {
     'block blast': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
     'bb': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
     'блок бласт': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
+    'blockblast': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
     'сапер': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
     'saper': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
     'minesweeper': { column: 'saper_wins', name: 'Сапёр', isHigherBetter: true },
@@ -540,9 +551,10 @@ const GAME_CONFIG = {
     'referrals': { column: 'referral_count', name: 'Рефералы', isHigherBetter: true },
 };
 
-// Получить топ-3 + пользователя
-async function getTopForGame(gameConfig, userId) {
+// Получить топ-3 + пользователя (с Premium эмодзи для бота)
+async function getTopForGame(gameConfig, userId, usePremiumEmoji = true) {
     const { column, name, isHigherBetter } = gameConfig;
+    const emojis = usePremiumEmoji ? EMOJI : EMOJI_INLINE;
     
     // Получаем топ-3
     const { data: top3 } = await supabase
@@ -577,7 +589,7 @@ async function getTopForGame(gameConfig, userId) {
     }
     
     // Формируем текст
-    const medals = [EMOJI.first, EMOJI.second, EMOJI.third];
+    const medals = [emojis.first, emojis.second, emojis.third];
     let text = `<b>${name} — Топ игроков</b>\n\n`;
     
     top3.forEach((user, index) => {
@@ -592,20 +604,20 @@ async function getTopForGame(gameConfig, userId) {
         text += `\n━━━━━━━━━━━━━━━\n`;
         text += `📍 Вы: #${userRank} — <b>${userData[column]}</b>`;
     } else if (userRank && userRank <= 3) {
-        text += `\n${EMOJI.sparkle} Вы в топ-${userRank}!`;
+        text += `\n${emojis.sparkle} Вы в топ-${userRank}!`;
     }
     
     return { text, userRank };
 }
 
 // URL Mini App
-const WEBAPP_URL = 'https://sevet-apps.github.io/glass-games/';
+const WEBAPP_URL = 'https://sevet-apps.github.io/glass-test-server/';
 
 // Инициализация бота
 if (BOT_TOKEN) {
     const bot = new TelegramBot(BOT_TOKEN, { polling: true });
     
-    // Обработка inline запросов
+    // Обработка inline запросов (без Premium эмодзи)
     bot.on('inline_query', async (query) => {
         const queryText = query.query.toLowerCase().trim();
         const userId = query.from.id;
@@ -620,7 +632,7 @@ if (BOT_TOKEN) {
                 title: '🎮 Spark Games — Топы',
                 description: 'Введите название игры: Block Blast, Сапёр, Башня, Судоку, Шашки, Вордли',
                 input_message_content: {
-                    message_text: `${EMOJI.game} <b>Spark Games</b>\n\nДоступные топы:\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n• Рефералы\n\n${EMOJI.chart} Напишите: @spark_beta_bot [игра]`,
+                    message_text: `🎮 <b>Spark Games</b>\n\nДоступные топы:\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n• Рефералы\n\n📊 Напишите: @spark_beta_bot [игра]`,
                     parse_mode: 'HTML'
                 }
             });
@@ -636,7 +648,7 @@ if (BOT_TOKEN) {
             
             if (matchedGame) {
                 try {
-                    const { text } = await getTopForGame(matchedGame, userId);
+                    const { text } = await getTopForGame(matchedGame, userId, false); // false = без Premium эмодзи
                     
                     results.push({
                         type: 'article',
@@ -686,7 +698,7 @@ if (BOT_TOKEN) {
             `${EMOJI.game} <b>Добро пожаловать в Spark Games!</b>\n\n` +
             `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
             `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
-            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате`,
+            `${EMOJI.chart} <b>Топы:</b> напишите /top [игра]`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -696,6 +708,53 @@ if (BOT_TOKEN) {
                 }
             }
         );
+    });
+    
+    // Команда /top [игра] - с Premium эмодзи!
+    bot.onText(/\/top(.*)/, async (msg, match) => {
+        const chatId = msg.chat.id;
+        const userId = msg.from.id;
+        const gameName = match[1].trim().toLowerCase();
+        
+        if (!gameName) {
+            // Показываем список игр
+            bot.sendMessage(chatId,
+                `${EMOJI.chart} <b>Доступные топы:</b>\n\n` +
+                `• /top block blast\n` +
+                `• /top сапер\n` +
+                `• /top башня\n` +
+                `• /top судоку\n` +
+                `• /top шашки\n` +
+                `• /top вордли\n` +
+                `• /top рефералы`,
+                { parse_mode: 'HTML' }
+            );
+            return;
+        }
+        
+        // Ищем игру
+        let matchedGame = null;
+        for (const [key, config] of Object.entries(GAME_CONFIG)) {
+            if (gameName.includes(key) || key.includes(gameName)) {
+                matchedGame = config;
+                break;
+            }
+        }
+        
+        if (matchedGame) {
+            try {
+                const { text } = await getTopForGame(matchedGame, userId, true); // true = Premium эмодзи
+                bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
+            } catch (e) {
+                console.error('Top command error:', e);
+                bot.sendMessage(chatId, 'Ошибка загрузки топа');
+            }
+        } else {
+            bot.sendMessage(chatId, 
+                `Игра не найдена. Напишите /top для списка доступных игр.`,
+                { parse_mode: 'HTML' }
+            );
+        }
     });
     
     console.log('Telegram Bot initialized with inline mode');
