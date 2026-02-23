@@ -587,9 +587,20 @@ async function getTopForGame(gameConfig, userId) {
     return { text, userRank };
 }
 
+// URL сервера для webhook (замени на свой Render URL)
+const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://glass-api-kh3s.onrender.com';
+
 // Инициализация бота
+let bot = null;
 if (BOT_TOKEN) {
-    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    bot = new TelegramBot(BOT_TOKEN);
+    
+    // Устанавливаем webhook
+    bot.setWebHook(`${WEBHOOK_URL}/bot${BOT_TOKEN}`).then(() => {
+        console.log('Telegram Bot webhook set to:', `${WEBHOOK_URL}/bot${BOT_TOKEN}`);
+    }).catch(err => {
+        console.error('Failed to set webhook:', err.message);
+    });
     
     // Обработка inline запросов
     bot.on('inline_query', async (query) => {
@@ -682,10 +693,18 @@ if (BOT_TOKEN) {
         );
     });
     
-    console.log('Telegram Bot initialized with inline mode');
+    console.log('Telegram Bot initialized with webhook mode');
 } else {
     console.log('BOT_TOKEN not set, Telegram Bot disabled');
 }
+
+// Webhook endpoint для Telegram
+app.post(`/bot${BOT_TOKEN}`, (req, res) => {
+    if (bot) {
+        bot.processUpdate(req.body);
+    }
+    res.sendStatus(200);
+});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Glass API v37.0 running on port ${PORT}`));
