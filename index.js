@@ -506,5 +506,186 @@ function cleanupRoom(roomCode) {
     }
 }
 
+// --- TELEGRAM BOT INLINE MODE ---
+const TelegramBot = require('node-telegram-bot-api');
+
+// Конфигурация игр для inline режима
+const GAME_CONFIG = {
+    'block blast': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
+    'bb': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
+    'блок бласт': { column: 'bb_best_score', name: 'Block Blast', emoji: '🟦', isHigherBetter: true },
+    'сапер': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
+    'saper': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
+    'minesweeper': { column: 'saper_wins', name: 'Сапёр', emoji: '💣', isHigherBetter: true },
+    'башня': { column: 'tower_best', name: 'Башня', emoji: '🏗️', isHigherBetter: true },
+    'tower': { column: 'tower_best', name: 'Башня', emoji: '🏗️', isHigherBetter: true },
+    'судоку': { column: 'sudoku_wins', name: 'Судоку', emoji: '🔢', isHigherBetter: true },
+    'sudoku': { column: 'sudoku_wins', name: 'Судоку', emoji: '🔢', isHigherBetter: true },
+    'шашки': { column: 'checkers_wins_pve', name: 'Шашки', emoji: '🎯', isHigherBetter: true },
+    'checkers': { column: 'checkers_wins_pve', name: 'Шашки', emoji: '🎯', isHigherBetter: true },
+    'вордли': { column: 'wordle_wins', name: 'Вордли', emoji: '📝', isHigherBetter: true },
+    'wordle': { column: 'wordle_wins', name: 'Вордли', emoji: '📝', isHigherBetter: true },
+    'рефералы': { column: 'referral_count', name: 'Рефералы', emoji: '👥', isHigherBetter: true },
+    'referrals': { column: 'referral_count', name: 'Рефералы', emoji: '👥', isHigherBetter: true },
+};
+
+// Получить топ-5 + пользователя
+async function getTopForGame(gameConfig, userId) {
+    const { column, name, emoji, isHigherBetter } = gameConfig;
+    
+    // Получаем топ-5
+    const { data: top5 } = await supabase
+        .from('users')
+        .select(`telegram_id, username, ${column}`)
+        .not(column, 'is', null)
+        .gt(column, 0)
+        .order(column, { ascending: !isHigherBetter })
+        .limit(5);
+    
+    if (!top5 || top5.length === 0) {
+        return { text: `${emoji} ${name}\n\nПока нет результатов`, userRank: null };
+    }
+    
+    // Получаем все для определения места пользователя
+    const { data: allUsers } = await supabase
+        .from('users')
+        .select(`telegram_id, username, ${column}`)
+        .not(column, 'is', null)
+        .gt(column, 0)
+        .order(column, { ascending: !isHigherBetter });
+    
+    let userRank = null;
+    let userData = null;
+    
+    if (userId && allUsers) {
+        const userIndex = allUsers.findIndex(u => String(u.telegram_id) === String(userId));
+        if (userIndex >= 0) {
+            userRank = userIndex + 1;
+            userData = allUsers[userIndex];
+        }
+    }
+    
+    // Формируем текст
+    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    let text = `${emoji} <b>${name} - Топ игроков</b>\n\n`;
+    
+    top5.forEach((user, index) => {
+        const medal = medals[index];
+        const score = user[column];
+        const username = user.username || 'Игрок';
+        text += `${medal} ${username} — <b>${score}</b>\n`;
+    });
+    
+    // Добавляем информацию о пользователе если он не в топ-5
+    if (userRank && userRank > 5 && userData) {
+        text += `\n━━━━━━━━━━━━━━━\n`;
+        text += `📍 Вы: #${userRank} — <b>${userData[column]}</b>`;
+    } else if (userRank && userRank <= 5) {
+        text += `\n✨ Вы в топ-${userRank}!`;
+    }
+    
+    return { text, userRank };
+}
+
+// Инициализация бота
+if (BOT_TOKEN) {
+    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+    
+    // Обработка inline запросов
+    bot.on('inline_query', async (query) => {
+        const queryText = query.query.toLowerCase().trim();
+        const userId = query.from.id;
+        
+        const results = [];
+        
+        // Если запрос пустой - показываем все игры
+        if (!queryText) {
+            results.push({
+                type: 'article',
+                id: 'help',
+                title: '🎮 Spark Games - Топы',
+                description: 'Введите название игры: block blast, сапер, башня, судоку, шашки, вордли',
+                input_message_content: {
+                    message_text: '🎮 <b>Spark Games</b>\n\nДоступные топы:\n• block blast\n• сапер\n• башня\n• судоку\n• шашки\n• вордли\n• рефералы\n\nНапишите: @spark_beta_bot [игра]',
+                    parse_mode: 'HTML'
+                }
+            });
+        } else {
+            // Ищем совпадение с игрой
+            let matchedGame = null;
+            for (const [key, config] of Object.entries(GAME_CONFIG)) {
+                if (queryText.includes(key)) {
+                    matchedGame = config;
+                    break;
+                }
+            }
+            
+            if (matchedGame) {
+                try {
+                    const { text } = await getTopForGame(matchedGame, userId);
+                    
+                    results.push({
+                        type: 'article',
+                        id: `top_${matchedGame.column}`,
+                        title: `${matchedGame.emoji} Топ ${matchedGame.name}`,
+                        description: 'Нажмите чтобы отправить топ в чат',
+                        input_message_content: {
+                            message_text: text,
+                            parse_mode: 'HTML'
+                        }
+                    });
+                } catch (e) {
+                    console.error('Inline query error:', e);
+                }
+            } else {
+                // Предлагаем варианты
+                for (const [key, config] of Object.entries(GAME_CONFIG)) {
+                    if (key.includes(queryText) || config.name.toLowerCase().includes(queryText)) {
+                        results.push({
+                            type: 'article',
+                            id: `suggest_${config.column}`,
+                            title: `${config.emoji} ${config.name}`,
+                            description: `Показать топ ${config.name}`,
+                            input_message_content: {
+                                message_text: `Загрузка топа ${config.name}...`,
+                                parse_mode: 'HTML'
+                            }
+                        });
+                    }
+                }
+            }
+        }
+        
+        try {
+            await bot.answerInlineQuery(query.id, results, { cache_time: 10 });
+        } catch (e) {
+            console.error('Answer inline query error:', e);
+        }
+    });
+    
+    // Команда /start
+    bot.onText(/\/start/, (msg) => {
+        const chatId = msg.chat.id;
+        bot.sendMessage(chatId, 
+            '🎮 <b>Добро пожаловать в Spark Games!</b>\n\n' +
+            'Играйте в крутые игры и соревнуйтесь с друзьями!\n\n' +
+            '📱 <b>Открыть игры:</b> нажмите кнопку ниже\n' +
+            '📊 <b>Топы:</b> напишите @spark_beta_bot в любом чате',
+            { 
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: '🎮 Играть', web_app: { url: 'https://sevet.github.io/glass/' } }
+                    ]]
+                }
+            }
+        );
+    });
+    
+    console.log('Telegram Bot initialized with inline mode');
+} else {
+    console.log('BOT_TOKEN not set, Telegram Bot disabled');
+}
+
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Glass API v36.0 running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Glass API v37.0 running on port ${PORT}`));
