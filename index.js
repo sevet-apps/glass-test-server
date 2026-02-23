@@ -518,6 +518,8 @@ const EMOJI = {
     game: '<tg-emoji emoji-id="5361741454685256344">🎮</tg-emoji>',
     play: '<tg-emoji emoji-id="5427168083074628963">▶️</tg-emoji>',
     chart: '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>',
+    joystick: '<tg-emoji emoji-id="5438496463044752972">🕹</tg-emoji>',
+    trophy: '<tg-emoji emoji-id="5280769763398671636">🏆</tg-emoji>',
 };
 
 // Обычные эмодзи для inline (Premium не поддерживается)
@@ -682,8 +684,18 @@ const inlineCache = new Map();
 if (BOT_TOKEN) {
     const bot = new TelegramBot(BOT_TOKEN, { polling: true });
     
+    // Обработчик ошибок polling - чтобы бот не падал
+    bot.on('polling_error', (error) => {
+        console.error('Polling error:', error.code, error.message);
+    });
+    
+    bot.on('error', (error) => {
+        console.error('Bot error:', error.message);
+    });
+    
     // Обработка inline запросов
     bot.on('inline_query', async (query) => {
+        try {
         const queryText = query.query.toLowerCase().trim();
         const userId = query.from.id;
         const user = query.from;
@@ -727,7 +739,7 @@ if (BOT_TOKEN) {
                 title: '❌⭕ Крестики-нолики',
                 description: 'Сыграйте с кем-то из чата!',
                 input_message_content: {
-                    message_text: `🎮 <b>${userName}</b> хочет сыграть в крестики-нолики!\n\nНажмите любую клетку, чтобы принять вызов.`,
+                    message_text: `🕹 <b>${userName}</b> хочет сыграть в крестики-нолики!\n\nНажмите любую клетку, чтобы принять вызов.`,
                     parse_mode: 'HTML'
                 },
                 reply_markup: getTTTKeyboard(createTTTBoard(), gameId)
@@ -805,12 +817,16 @@ if (BOT_TOKEN) {
         try {
             await bot.answerInlineQuery(query.id, results, { cache_time: 0 });
         } catch (e) {
-            console.error('Answer inline query error:', e);
+            console.error('Answer inline query error:', e.message);
+        }
+        } catch (err) {
+            console.error('Inline query handler error:', err.message);
         }
     });
     
     // Обработка chosen_inline_result
     bot.on('chosen_inline_result', async (result) => {
+        try {
         const resultId = result.result_id;
         const inlineMessageId = result.inline_message_id;
         const userId = result.from.id;
@@ -836,6 +852,20 @@ if (BOT_TOKEN) {
             console.log('TTT game created:', inlineMessageId);
             // Удаляем через 30 минут
             setTimeout(() => tttGames.delete(inlineMessageId), 30 * 60 * 1000);
+            
+            // Редактируем с Premium эмодзи
+            try {
+                await bot.editMessageText(
+                    `${EMOJI.joystick} <b>${cached.creatorName}</b> хочет сыграть в крестики-нолики!\n\nНажмите любую клетку, чтобы принять вызов.`,
+                    {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: getTTTKeyboard(createTTTBoard(), resultId)
+                    }
+                );
+            } catch (e) {
+                console.error('TTT edit error:', e.message);
+            }
             return;
         }
         
@@ -870,17 +900,22 @@ if (BOT_TOKEN) {
         }
         
         inlineCache.delete(resultId);
+        } catch (err) {
+            console.error('Chosen inline result error:', err.message);
+        }
     });
     
     // Обработка нажатий на кнопки (для крестиков-ноликов)
     bot.on('callback_query', async (callbackQuery) => {
+        try {
         const data = callbackQuery.data;
         const user = callbackQuery.from;
         const inlineMessageId = callbackQuery.inline_message_id;
         
         // Проверяем, что это крестики-нолики
         if (!data.startsWith('ttt_') || !inlineMessageId) {
-            return bot.answerCallbackQuery(callbackQuery.id);
+            try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e) {}
+            return;
         }
         
         const parts = data.split('_');
@@ -890,7 +925,8 @@ if (BOT_TOKEN) {
         const game = tttGames.get(inlineMessageId);
         
         if (!game) {
-            return bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' });
+            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' }); } catch(e) {}
+            return;
         }
         
         const userName = getUserDisplayName(user);
@@ -899,7 +935,8 @@ if (BOT_TOKEN) {
         if (game.status === 'waiting') {
             // Создатель не может играть сам с собой
             if (user.id === game.playerX.id) {
-                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' });
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' }); } catch(e) {}
+                return;
             }
             
             // Второй игрок присоединяется
@@ -907,24 +944,22 @@ if (BOT_TOKEN) {
             game.playerOName = userName;
             game.status = 'playing';
             
-            // Делаем первый ход за второго игрока (он нажал на клетку)
-            if (game.board[row][col] === TTT_EMPTY) {
-                // Первый ход делает X (создатель), так что O пока ждёт
-                // Обновляем сообщение
-                try {
-                    await bot.editMessageText(
-                        `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${game.playerXName} (❌)`,
-                        {
-                            inline_message_id: inlineMessageId,
-                            parse_mode: 'HTML',
-                            reply_markup: getTTTKeyboard(game.board, game.gameId)
-                        }
-                    );
-                } catch (e) {
-                    console.error('Edit error:', e.message);
-                }
-                return bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${game.playerXName}` });
+            // Обновляем сообщение
+            try {
+                await bot.editMessageText(
+                    `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${game.playerXName} (❌)`,
+                    {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: getTTTKeyboard(game.board, game.gameId)
+                    }
+                );
+                await bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${game.playerXName}` });
+            } catch (e) {
+                console.error('Edit error:', e.message);
+                try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
             }
+            return;
         }
         
         // Игра идёт
@@ -934,19 +969,22 @@ if (BOT_TOKEN) {
             const isPlayerO = user.id === game.playerO?.id;
             
             if (!isPlayerX && !isPlayerO) {
-                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' });
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' }); } catch(e) {}
+                return;
             }
             
             const expectedSymbol = game.currentTurn;
             const isCorrectTurn = (expectedSymbol === 'X' && isPlayerX) || (expectedSymbol === 'O' && isPlayerO);
             
             if (!isCorrectTurn) {
-                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' });
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' }); } catch(e) {}
+                return;
             }
             
             // Проверяем, что клетка свободна
             if (game.board[row][col] !== TTT_EMPTY) {
-                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Клетка уже занята!' });
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Клетка уже занята!' }); } catch(e) {}
+                return;
             }
             
             // Делаем ход
@@ -960,11 +998,11 @@ if (BOT_TOKEN) {
                 let resultText;
                 
                 if (winner === 'draw') {
-                    resultText = `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🤝 <b>Ничья!</b>`;
+                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🤝 <b>Ничья!</b>`;
                 } else {
                     const winnerName = winner === TTT_X ? game.playerXName : game.playerOName;
                     const winnerSymbol = winner;
-                    resultText = `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🏆 <b>${winnerName}</b> победил! ${winnerSymbol}`;
+                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.trophy} <b>${winnerName}</b> победил! ${winnerSymbol}`;
                 }
                 
                 try {
@@ -973,12 +1011,14 @@ if (BOT_TOKEN) {
                         parse_mode: 'HTML',
                         reply_markup: getTTTKeyboard(game.board, game.gameId)
                     });
+                    await bot.answerCallbackQuery(callbackQuery.id, { text: winner === 'draw' ? 'Ничья!' : 'Победа!' });
                 } catch (e) {
                     console.error('Edit error:', e.message);
+                    try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
                 }
                 
                 tttGames.delete(inlineMessageId);
-                return bot.answerCallbackQuery(callbackQuery.id, { text: winner === 'draw' ? 'Ничья!' : 'Победа!' });
+                return;
             }
             
             // Меняем ход
@@ -988,26 +1028,32 @@ if (BOT_TOKEN) {
             
             try {
                 await bot.editMessageText(
-                    `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${nextPlayerName} (${nextSymbol})`,
+                    `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${nextPlayerName} (${nextSymbol})`,
                     {
                         inline_message_id: inlineMessageId,
                         parse_mode: 'HTML',
                         reply_markup: getTTTKeyboard(game.board, game.gameId)
                     }
                 );
+                await bot.answerCallbackQuery(callbackQuery.id);
             } catch (e) {
                 console.error('Edit error:', e.message);
+                try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
             }
-            
-            return bot.answerCallbackQuery(callbackQuery.id);
+            return;
         }
         
         // Игра завершена
         if (game.status === 'finished') {
-            return bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' });
+            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' }); } catch(e) {}
+            return;
         }
         
-        bot.answerCallbackQuery(callbackQuery.id);
+        try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e) {}
+        } catch (err) {
+            console.error('Callback query error:', err.message);
+            try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e) {}
+        }
     });
     
     // Команда /start
@@ -1017,8 +1063,8 @@ if (BOT_TOKEN) {
             `${EMOJI.game} <b>Добро пожаловать в Spark Games!</b>\n\n` +
             `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
             `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
-            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате\n` +
-            `❌⭕ <b>Крестики-нолики:</b> @spark_beta_bot крестики-нолики`,
+            `${EMOJI.chart} <b>Топы:</b> @spark_beta_bot [игра]\n` +
+            `${EMOJI.joystick} <b>Крестики-нолики:</b> @spark_beta_bot крестики`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
