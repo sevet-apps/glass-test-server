@@ -530,6 +530,68 @@ const EMOJI_INLINE = {
     chart: '📊',
 };
 
+// --- TIC-TAC-TOE GAME ---
+const tttGames = new Map(); // inline_message_id -> game state
+
+const TTT_X = '❌';
+const TTT_O = '⭕';
+const TTT_EMPTY = '▫️';
+
+function createTTTBoard() {
+    return [
+        [TTT_EMPTY, TTT_EMPTY, TTT_EMPTY],
+        [TTT_EMPTY, TTT_EMPTY, TTT_EMPTY],
+        [TTT_EMPTY, TTT_EMPTY, TTT_EMPTY]
+    ];
+}
+
+function getTTTKeyboard(board, gameId) {
+    return {
+        inline_keyboard: board.map((row, r) => 
+            row.map((cell, c) => ({
+                text: cell,
+                callback_data: `ttt_${gameId}_${r}_${c}`
+            }))
+        )
+    };
+}
+
+function checkTTTWinner(board) {
+    // Проверяем строки
+    for (let i = 0; i < 3; i++) {
+        if (board[i][0] !== TTT_EMPTY && board[i][0] === board[i][1] && board[i][1] === board[i][2]) {
+            return board[i][0];
+        }
+    }
+    // Проверяем столбцы
+    for (let i = 0; i < 3; i++) {
+        if (board[0][i] !== TTT_EMPTY && board[0][i] === board[1][i] && board[1][i] === board[2][i]) {
+            return board[0][i];
+        }
+    }
+    // Проверяем диагонали
+    if (board[0][0] !== TTT_EMPTY && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
+        return board[0][0];
+    }
+    if (board[0][2] !== TTT_EMPTY && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
+        return board[0][2];
+    }
+    // Проверяем ничью
+    let isDraw = true;
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            if (board[r][c] === TTT_EMPTY) isDraw = false;
+        }
+    }
+    if (isDraw) return 'draw';
+    return null;
+}
+
+function getUserDisplayName(user) {
+    if (user.username) return '@' + user.username;
+    return user.first_name || 'Игрок';
+}
+
 // Конфигурация игр для inline режима
 const GAME_CONFIG = {
     'block blast': { column: 'bb_best_score', name: 'Block Blast', isHigherBetter: true },
@@ -624,6 +686,7 @@ if (BOT_TOKEN) {
     bot.on('inline_query', async (query) => {
         const queryText = query.query.toLowerCase().trim();
         const userId = query.from.id;
+        const user = query.from;
         
         const results = [];
         
@@ -632,10 +695,10 @@ if (BOT_TOKEN) {
             results.push({
                 type: 'article',
                 id: 'help',
-                title: '🎮 Spark Games — Топы',
-                description: 'Введите название игры: Block Blast, Сапёр, Башня, Судоку, Шашки, Вордли',
+                title: '🎮 Spark Games',
+                description: 'Топы игр и крестики-нолики',
                 input_message_content: {
-                    message_text: `🎮 <b>Spark Games</b>\n\nДоступные топы:\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n• Рефералы\n\n📊 Напишите: @spark_beta_bot [игра]`,
+                    message_text: `🎮 <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n\n📊 Напишите: @spark_beta_bot [команда]`,
                     parse_mode: 'HTML'
                 },
                 reply_markup: {
@@ -644,8 +707,34 @@ if (BOT_TOKEN) {
                     ]]
                 }
             });
-        } else {
-            // Ищем совпадение с игрой
+        } 
+        // Крестики-нолики
+        else if (queryText.includes('крестики') || queryText.includes('нолики') || queryText.includes('ttt') || queryText.includes('xo')) {
+            const gameId = `ttt_${userId}_${Date.now()}`;
+            const userName = getUserDisplayName(user);
+            
+            // Сохраняем данные создателя игры
+            inlineCache.set(gameId, {
+                type: 'ttt',
+                creator: user,
+                creatorName: userName
+            });
+            setTimeout(() => inlineCache.delete(gameId), 10 * 60 * 1000);
+            
+            results.push({
+                type: 'article',
+                id: gameId,
+                title: '❌⭕ Крестики-нолики',
+                description: 'Сыграйте с кем-то из чата!',
+                input_message_content: {
+                    message_text: `🎮 <b>${userName}</b> хочет сыграть в крестики-нолики!\n\nНажмите любую клетку, чтобы принять вызов.`,
+                    parse_mode: 'HTML'
+                },
+                reply_markup: getTTTKeyboard(createTTTBoard(), gameId)
+            });
+        }
+        else {
+            // Ищем совпадение с игрой для топов
             let matchedGame = null;
             for (const [key, config] of Object.entries(GAME_CONFIG)) {
                 if (queryText.includes(key)) {
@@ -720,7 +809,7 @@ if (BOT_TOKEN) {
         }
     });
     
-    // Обработка chosen_inline_result - редактируем с Premium эмодзи!
+    // Обработка chosen_inline_result
     bot.on('chosen_inline_result', async (result) => {
         const resultId = result.result_id;
         const inlineMessageId = result.inline_message_id;
@@ -730,11 +819,30 @@ if (BOT_TOKEN) {
         
         if (!inlineMessageId) return;
         
-        // Получаем данные из кэша или определяем по id
-        let gameConfig = inlineCache.get(resultId)?.gameConfig;
+        const cached = inlineCache.get(resultId);
+        
+        // Если это крестики-нолики - сохраняем игру
+        if (cached?.type === 'ttt') {
+            tttGames.set(inlineMessageId, {
+                board: createTTTBoard(),
+                playerX: cached.creator, // Создатель - X
+                playerO: null, // Ещё не присоединился
+                playerXName: cached.creatorName,
+                playerOName: null,
+                currentTurn: 'X',
+                gameId: resultId,
+                status: 'waiting' // waiting, playing, finished
+            });
+            console.log('TTT game created:', inlineMessageId);
+            // Удаляем через 30 минут
+            setTimeout(() => tttGames.delete(inlineMessageId), 30 * 60 * 1000);
+            return;
+        }
+        
+        // Получаем данные из кэша для топов
+        let gameConfig = cached?.gameConfig;
         
         if (!gameConfig) {
-            // Пробуем найти по column в id
             for (const config of Object.values(GAME_CONFIG)) {
                 if (resultId.includes(config.column)) {
                     gameConfig = config;
@@ -764,6 +872,144 @@ if (BOT_TOKEN) {
         inlineCache.delete(resultId);
     });
     
+    // Обработка нажатий на кнопки (для крестиков-ноликов)
+    bot.on('callback_query', async (callbackQuery) => {
+        const data = callbackQuery.data;
+        const user = callbackQuery.from;
+        const inlineMessageId = callbackQuery.inline_message_id;
+        
+        // Проверяем, что это крестики-нолики
+        if (!data.startsWith('ttt_') || !inlineMessageId) {
+            return bot.answerCallbackQuery(callbackQuery.id);
+        }
+        
+        const parts = data.split('_');
+        const row = parseInt(parts[parts.length - 2]);
+        const col = parseInt(parts[parts.length - 1]);
+        
+        const game = tttGames.get(inlineMessageId);
+        
+        if (!game) {
+            return bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' });
+        }
+        
+        const userName = getUserDisplayName(user);
+        
+        // Если игра ждёт второго игрока
+        if (game.status === 'waiting') {
+            // Создатель не может играть сам с собой
+            if (user.id === game.playerX.id) {
+                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' });
+            }
+            
+            // Второй игрок присоединяется
+            game.playerO = user;
+            game.playerOName = userName;
+            game.status = 'playing';
+            
+            // Делаем первый ход за второго игрока (он нажал на клетку)
+            if (game.board[row][col] === TTT_EMPTY) {
+                // Первый ход делает X (создатель), так что O пока ждёт
+                // Обновляем сообщение
+                try {
+                    await bot.editMessageText(
+                        `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${game.playerXName} (❌)`,
+                        {
+                            inline_message_id: inlineMessageId,
+                            parse_mode: 'HTML',
+                            reply_markup: getTTTKeyboard(game.board, game.gameId)
+                        }
+                    );
+                } catch (e) {
+                    console.error('Edit error:', e.message);
+                }
+                return bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${game.playerXName}` });
+            }
+        }
+        
+        // Игра идёт
+        if (game.status === 'playing') {
+            // Проверяем, что ходит правильный игрок
+            const isPlayerX = user.id === game.playerX.id;
+            const isPlayerO = user.id === game.playerO?.id;
+            
+            if (!isPlayerX && !isPlayerO) {
+                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' });
+            }
+            
+            const expectedSymbol = game.currentTurn;
+            const isCorrectTurn = (expectedSymbol === 'X' && isPlayerX) || (expectedSymbol === 'O' && isPlayerO);
+            
+            if (!isCorrectTurn) {
+                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' });
+            }
+            
+            // Проверяем, что клетка свободна
+            if (game.board[row][col] !== TTT_EMPTY) {
+                return bot.answerCallbackQuery(callbackQuery.id, { text: 'Клетка уже занята!' });
+            }
+            
+            // Делаем ход
+            game.board[row][col] = expectedSymbol === 'X' ? TTT_X : TTT_O;
+            
+            // Проверяем победителя
+            const winner = checkTTTWinner(game.board);
+            
+            if (winner) {
+                game.status = 'finished';
+                let resultText;
+                
+                if (winner === 'draw') {
+                    resultText = `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🤝 <b>Ничья!</b>`;
+                } else {
+                    const winnerName = winner === TTT_X ? game.playerXName : game.playerOName;
+                    const winnerSymbol = winner;
+                    resultText = `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🏆 <b>${winnerName}</b> победил! ${winnerSymbol}`;
+                }
+                
+                try {
+                    await bot.editMessageText(resultText, {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: getTTTKeyboard(game.board, game.gameId)
+                    });
+                } catch (e) {
+                    console.error('Edit error:', e.message);
+                }
+                
+                tttGames.delete(inlineMessageId);
+                return bot.answerCallbackQuery(callbackQuery.id, { text: winner === 'draw' ? 'Ничья!' : 'Победа!' });
+            }
+            
+            // Меняем ход
+            game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
+            const nextPlayerName = game.currentTurn === 'X' ? game.playerXName : game.playerOName;
+            const nextSymbol = game.currentTurn === 'X' ? '❌' : '⭕';
+            
+            try {
+                await bot.editMessageText(
+                    `❌⭕ <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${nextPlayerName} (${nextSymbol})`,
+                    {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: getTTTKeyboard(game.board, game.gameId)
+                    }
+                );
+            } catch (e) {
+                console.error('Edit error:', e.message);
+            }
+            
+            return bot.answerCallbackQuery(callbackQuery.id);
+        }
+        
+        // Игра завершена
+        if (game.status === 'finished') {
+            return bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' });
+        }
+        
+        bot.answerCallbackQuery(callbackQuery.id);
+    });
+    
     // Команда /start
     bot.onText(/\/start/, (msg) => {
         const chatId = msg.chat.id;
@@ -771,7 +1017,8 @@ if (BOT_TOKEN) {
             `${EMOJI.game} <b>Добро пожаловать в Spark Games!</b>\n\n` +
             `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
             `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
-            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате`,
+            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате\n` +
+            `❌⭕ <b>Крестики-нолики:</b> @spark_beta_bot крестики-нолики`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
