@@ -613,18 +613,21 @@ async function getTopForGame(gameConfig, userId, usePremiumEmoji = true) {
 // URL Mini App
 const WEBAPP_URL = 'https://sevet-apps.github.io/glass-test-server/';
 
+// Кэш для хранения данных inline запросов
+const inlineCache = new Map();
+
 // Инициализация бота
 if (BOT_TOKEN) {
     const bot = new TelegramBot(BOT_TOKEN, { polling: true });
     
-    // Обработка inline запросов (без Premium эмодзи)
+    // Обработка inline запросов
     bot.on('inline_query', async (query) => {
         const queryText = query.query.toLowerCase().trim();
         const userId = query.from.id;
         
         const results = [];
         
-        // Если запрос пустой - показываем все игры
+        // Если запрос пустой - показываем помощь
         if (!queryText) {
             results.push({
                 type: 'article',
@@ -634,6 +637,11 @@ if (BOT_TOKEN) {
                 input_message_content: {
                     message_text: `🎮 <b>Spark Games</b>\n\nДоступные топы:\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n• Рефералы\n\n📊 Напишите: @spark_beta_bot [игра]`,
                     parse_mode: 'HTML'
+                },
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: '🎮 Играть', url: 'https://t.me/spark_beta_bot/SparkBETA' }
+                    ]]
                 }
             });
         } else {
@@ -648,16 +656,28 @@ if (BOT_TOKEN) {
             
             if (matchedGame) {
                 try {
-                    const { text } = await getTopForGame(matchedGame, userId, false); // false = без Premium эмодзи
+                    // Отправляем временное сообщение с обычными эмодзи
+                    const { text } = await getTopForGame(matchedGame, userId, false);
+                    
+                    const resultId = `top_${matchedGame.column}_${Date.now()}`;
+                    
+                    // Сохраняем в кэш
+                    inlineCache.set(resultId, { gameConfig: matchedGame, userId });
+                    setTimeout(() => inlineCache.delete(resultId), 5 * 60 * 1000);
                     
                     results.push({
                         type: 'article',
-                        id: `top_${matchedGame.column}`,
+                        id: resultId,
                         title: `Топ ${matchedGame.name}`,
                         description: 'Нажмите чтобы отправить топ в чат',
                         input_message_content: {
                             message_text: text,
                             parse_mode: 'HTML'
+                        },
+                        reply_markup: {
+                            inline_keyboard: [[
+                                { text: '🎮 Играть', url: 'https://t.me/spark_beta_bot/SparkBETA' }
+                            ]]
                         }
                     });
                 } catch (e) {
@@ -669,14 +689,23 @@ if (BOT_TOKEN) {
                 for (const [key, config] of Object.entries(GAME_CONFIG)) {
                     if ((key.includes(queryText) || config.name.toLowerCase().includes(queryText)) && !suggested.has(config.column)) {
                         suggested.add(config.column);
+                        const resultId = `suggest_${config.column}_${Date.now()}`;
+                        inlineCache.set(resultId, { gameConfig: config, userId });
+                        setTimeout(() => inlineCache.delete(resultId), 5 * 60 * 1000);
+                        
                         results.push({
                             type: 'article',
-                            id: `suggest_${config.column}`,
+                            id: resultId,
                             title: `${config.name}`,
                             description: `Показать топ ${config.name}`,
                             input_message_content: {
-                                message_text: `Загрузка топа ${config.name}...`,
+                                message_text: `⏳ Загрузка...`,
                                 parse_mode: 'HTML'
+                            },
+                            reply_markup: {
+                                inline_keyboard: [[
+                                    { text: '🎮 Играть', url: 'https://t.me/spark_beta_bot/SparkBETA' }
+                                ]]
                             }
                         });
                     }
@@ -685,10 +714,54 @@ if (BOT_TOKEN) {
         }
         
         try {
-            await bot.answerInlineQuery(query.id, results, { cache_time: 10 });
+            await bot.answerInlineQuery(query.id, results, { cache_time: 0 });
         } catch (e) {
             console.error('Answer inline query error:', e);
         }
+    });
+    
+    // Обработка chosen_inline_result - редактируем с Premium эмодзи!
+    bot.on('chosen_inline_result', async (result) => {
+        const resultId = result.result_id;
+        const inlineMessageId = result.inline_message_id;
+        const userId = result.from.id;
+        
+        console.log('Chosen inline result:', resultId);
+        
+        if (!inlineMessageId) return;
+        
+        // Получаем данные из кэша или определяем по id
+        let gameConfig = inlineCache.get(resultId)?.gameConfig;
+        
+        if (!gameConfig) {
+            // Пробуем найти по column в id
+            for (const config of Object.values(GAME_CONFIG)) {
+                if (resultId.includes(config.column)) {
+                    gameConfig = config;
+                    break;
+                }
+            }
+        }
+        
+        if (gameConfig) {
+            try {
+                const { text } = await getTopForGame(gameConfig, userId, true);
+                await bot.editMessageText(text, {
+                    inline_message_id: inlineMessageId,
+                    parse_mode: 'HTML',
+                    reply_markup: {
+                        inline_keyboard: [[
+                            { text: '🎮 Играть', url: 'https://t.me/spark_beta_bot/SparkBETA' }
+                        ]]
+                    }
+                });
+                console.log('Message edited with premium emoji!');
+            } catch (e) {
+                console.error('Edit message error:', e.message);
+            }
+        }
+        
+        inlineCache.delete(resultId);
     });
     
     // Команда /start
@@ -698,7 +771,7 @@ if (BOT_TOKEN) {
             `${EMOJI.game} <b>Добро пожаловать в Spark Games!</b>\n\n` +
             `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
             `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
-            `${EMOJI.chart} <b>Топы:</b> напишите /top [игра]`,
+            `${EMOJI.chart} <b>Топы:</b> напишите @spark_beta_bot в любом чате`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
@@ -717,7 +790,6 @@ if (BOT_TOKEN) {
         const gameName = match[1].trim().toLowerCase();
         
         if (!gameName) {
-            // Показываем список игр
             bot.sendMessage(chatId,
                 `${EMOJI.chart} <b>Доступные топы:</b>\n\n` +
                 `• /top block blast\n` +
@@ -732,7 +804,6 @@ if (BOT_TOKEN) {
             return;
         }
         
-        // Ищем игру
         let matchedGame = null;
         for (const [key, config] of Object.entries(GAME_CONFIG)) {
             if (gameName.includes(key) || key.includes(gameName)) {
@@ -743,21 +814,18 @@ if (BOT_TOKEN) {
         
         if (matchedGame) {
             try {
-                const { text } = await getTopForGame(matchedGame, userId, true); // true = Premium эмодзи
+                const { text } = await getTopForGame(matchedGame, userId, true);
                 bot.sendMessage(chatId, text, { parse_mode: 'HTML' });
             } catch (e) {
                 console.error('Top command error:', e);
                 bot.sendMessage(chatId, 'Ошибка загрузки топа');
             }
         } else {
-            bot.sendMessage(chatId, 
-                `Игра не найдена. Напишите /top для списка доступных игр.`,
-                { parse_mode: 'HTML' }
-            );
+            bot.sendMessage(chatId, 'Игра не найдена. Напишите /top для списка.', { parse_mode: 'HTML' });
         }
     });
     
-    console.log('Telegram Bot initialized with inline mode');
+    console.log('Telegram Bot initialized with inline + premium emoji support');
 } else {
     console.log('BOT_TOKEN not set, Telegram Bot disabled');
 }
