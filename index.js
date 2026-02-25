@@ -520,6 +520,7 @@ const EMOJI = {
     chart: '<tg-emoji emoji-id="5231200819986047254">📊</tg-emoji>',
     joystick: '<tg-emoji emoji-id="5438496463044752972">🕹</tg-emoji>',
     trophy: '<tg-emoji emoji-id="5280769763398671636">🏆</tg-emoji>',
+    handshake: '<tg-emoji emoji-id="5357080225463149588">🤝</tg-emoji>',
 };
 
 // Обычные эмодзи для inline (Premium не поддерживается)
@@ -704,9 +705,13 @@ if (BOT_TOKEN) {
         
         // Если запрос пустой - показываем помощь
         if (!queryText) {
+            const helpId = `help_${Date.now()}`;
+            inlineCache.set(helpId, { type: 'help' });
+            setTimeout(() => inlineCache.delete(helpId), 5 * 60 * 1000);
+            
             results.push({
                 type: 'article',
-                id: 'help',
+                id: helpId,
                 title: '🎮 Spark Games',
                 description: 'Топы игр и крестики-нолики',
                 input_message_content: {
@@ -869,6 +874,28 @@ if (BOT_TOKEN) {
             return;
         }
         
+        // Если это help - редактируем с Premium эмодзи
+        if (cached?.type === 'help') {
+            try {
+                await bot.editMessageText(
+                    `${EMOJI.game} <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n\n${EMOJI.chart} Напишите: @spark_beta_bot [команда]`,
+                    {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [[
+                                { text: '🎮 Играть', url: 'https://t.me/spark_beta_bot/SparkBETA' }
+                            ]]
+                        }
+                    }
+                );
+            } catch (e) {
+                console.error('Help edit error:', e.message);
+            }
+            inlineCache.delete(resultId);
+            return;
+        }
+        
         // Получаем данные из кэша для топов
         let gameConfig = cached?.gameConfig;
         
@@ -998,7 +1025,7 @@ if (BOT_TOKEN) {
                 let resultText;
                 
                 if (winner === 'draw') {
-                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n🤝 <b>Ничья!</b>`;
+                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.handshake} <b>Ничья!</b>`;
                 } else {
                     const winnerName = winner === TTT_X ? game.playerXName : game.playerOName;
                     const winnerSymbol = winner;
