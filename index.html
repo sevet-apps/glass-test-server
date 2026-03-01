@@ -2394,7 +2394,39 @@
         
         /* --- BLOCK BLAST (FIXED) --- */
         const BB_ROWS=8, BB_COLS=8; let bbGrid=[], bbScore=0, bbDisplayedScore=0, bbShapes=[], bbState=null, bbCombo=0, bbComboBuffer=0, bbIsAnimating=false; 
-        const SHAPES = [[[1]],[[1,1]],[[1],[1]],[[1,1,1]],[[1],[1],[1]],[[1,1,1,1]],[[1],[1],[1],[1]],[[1,1,1,1,1]],[[1],[1],[1],[1],[1]],[[1,1],[1,1]],[[1,1,1],[1,1,1]],[[1,1],[1,1],[1,1]],[[1,1,1],[1,1,1],[1,1,1]],[[1,0],[1,0],[1,1]],[[1,1,1],[1,0,0]],[[1,1],[0,1],[0,1]],[[0,0,1],[1,1,1]],[[0,1],[0,1],[1,1]],[[1,0,0],[1,1,1]],[[1,1],[1,0],[1,0]],[[1,1,1],[0,0,1]],[[1,0],[1,1]],[[1,1],[1,0]],[[1,1],[0,1]],[[0,1],[1,1]],[[1,1,1],[0,1,0]],[[0,1,0],[1,1,1]],[[1,0],[1,1],[1,0]],[[0,1],[1,1],[0,1]]];
+        // Полный набор фигур как в оригинальном Block Blast
+        const SHAPES = [
+            // Одиночный блок
+            [[1]],
+            // Линии 2
+            [[1,1]], [[1],[1]],
+            // Линии 3
+            [[1,1,1]], [[1],[1],[1]],
+            // Линии 4
+            [[1,1,1,1]], [[1],[1],[1],[1]],
+            // Линии 5
+            [[1,1,1,1,1]], [[1],[1],[1],[1],[1]],
+            // Квадраты
+            [[1,1],[1,1]],
+            [[1,1,1],[1,1,1],[1,1,1]],
+            // Прямоугольники 2x3, 3x2
+            [[1,1,1],[1,1,1]], [[1,1],[1,1],[1,1]],
+            // L-образные (все 4 поворота)
+            [[1,0],[1,0],[1,1]], [[1,1,1],[1,0,0]], [[1,1],[0,1],[0,1]], [[0,0,1],[1,1,1]],
+            [[0,1],[0,1],[1,1]], [[1,0,0],[1,1,1]], [[1,1],[1,0],[1,0]], [[1,1,1],[0,0,1]],
+            // Малые L (2x2)
+            [[1,0],[1,1]], [[1,1],[1,0]], [[1,1],[0,1]], [[0,1],[1,1]],
+            // T-образные (все 4 поворота)
+            [[1,1,1],[0,1,0]], [[0,1],[1,1],[0,1]], [[0,1,0],[1,1,1]], [[1,0],[1,1],[1,0]],
+            // S и Z фигуры
+            [[0,1,1],[1,1,0]], [[1,1,0],[0,1,1]], [[1,0],[1,1],[0,1]], [[0,1],[1,1],[1,0]],
+            // Большие L (3x3)
+            [[1,0,0],[1,0,0],[1,1,1]], [[1,1,1],[0,0,1],[0,0,1]], [[1,1,1],[1,0,0],[1,0,0]], [[0,0,1],[0,0,1],[1,1,1]],
+            // Плюс
+            [[0,1,0],[1,1,1],[0,1,0]],
+            // Уголки большие
+            [[1,1],[1,0]], [[1,1],[0,1]], [[0,1],[1,1]], [[1,0],[1,1]]
+        ];
         const COLORS = ['bb-c-1','bb-c-2','bb-c-3','bb-c-4','bb-c-5','bb-c-6','bb-c-7'];
         const DRAG_LIFT_Y = 150; 
         function startBlockBlastCheck() { if(localStorage.getItem('bb_state')) document.getElementById('modalBBResume').classList.add('visible'); else newGameBB(); }
@@ -2415,7 +2447,7 @@
             const touch = e.touches ? e.touches[0] : e; 
             const gridRect = document.getElementById('bbGrid').getBoundingClientRect(); 
             const cellFullSize = gridRect.width / 8; 
-            dragData = { slotId, matrix, color }; 
+            dragData = { slotId, matrix, color, startX: touch.clientX, startY: touch.clientY }; 
             dragGhost = document.createElement('div'); 
             dragGhost.className = 'drag-ghost'; 
             dragGhost.style.gridTemplateColumns = `repeat(${matrix[0].length}, ${cellFullSize}px)`; 
@@ -2440,9 +2472,33 @@
             document.addEventListener('touchmove', onTouchMove, {passive: false}); document.addEventListener('touchend', onTouchEnd); document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onTouchEnd); 
         }
 
+        // Множитель движения - фигура двигается в 1.5 раза быстрее пальца
+        const DRAG_MULTIPLIER = 1.5;
+        
         function onTouchMove(e) { e.preventDefault(); handleMove(e.touches[0].clientX, e.touches[0].clientY); }
         function onMouseMove(e) { e.preventDefault(); handleMove(e.clientX, e.clientY); }
-        function handleMove(x, y) { const ghostX = x - touchOffsetX; const ghostY = y - touchOffsetY - DRAG_LIFT_Y; if(dragGhost) { dragGhost.style.left = ghostX + 'px'; dragGhost.style.top = ghostY + 'px'; } const gridRect = document.getElementById('bbGrid').getBoundingClientRect(); const cellFullSize = gridRect.width / 8; const relX = ghostX - gridRect.left; const relY = ghostY - gridRect.top; const col = Math.round(relX / cellFullSize); const row = Math.round(relY / cellFullSize); checkPlacement(row, col); }
+        function handleMove(x, y) { 
+            // Вычисляем смещение от начальной точки с множителем
+            const deltaX = (x - dragData.startX) * DRAG_MULTIPLIER;
+            const deltaY = (y - dragData.startY) * DRAG_MULTIPLIER;
+            
+            // Позиция ghost = начальная позиция + усиленное смещение
+            const ghostX = dragData.startX + deltaX - touchOffsetX; 
+            const ghostY = dragData.startY + deltaY - touchOffsetY - DRAG_LIFT_Y; 
+            
+            if(dragGhost) { 
+                dragGhost.style.left = ghostX + 'px'; 
+                dragGhost.style.top = ghostY + 'px'; 
+            } 
+            
+            const gridRect = document.getElementById('bbGrid').getBoundingClientRect(); 
+            const cellFullSize = gridRect.width / 8; 
+            const relX = ghostX - gridRect.left; 
+            const relY = ghostY - gridRect.top; 
+            const col = Math.round(relX / cellFullSize); 
+            const row = Math.round(relY / cellFullSize); 
+            checkPlacement(row, col); 
+        }
         function moveGhost(x, y) { const ghostX = x - touchOffsetX; const ghostY = y - touchOffsetY - DRAG_LIFT_Y; if(dragGhost) { dragGhost.style.left = ghostX + 'px'; dragGhost.style.top = ghostY + 'px'; } }
         
         function checkPlacement(r, c) { 
@@ -2493,7 +2549,27 @@
                 if(!isLiteMode) document.querySelector('.bb-game-container').classList.add('shake-screen');
                 rowsToClear.forEach(r => { if(!isLiteMode) fireNeonParticles(r, -1, triggerColor); for(let c=0; c<BB_COLS; c++) { bbGrid[r][c] = 0; animateClear(r, c, triggerColor); } }); 
                 colsToClear.forEach(c => { if(!isLiteMode) fireNeonParticles(-1, c, triggerColor); for(let r=0; r<BB_ROWS; r++) { bbGrid[r][c] = 0; animateClear(r, c, triggerColor); } }); 
-                setTimeout(() => { document.querySelector('.bb-game-container').classList.remove('shake-screen'); let points = totalCleared * 10; if (totalCleared >= 2) { points = points * totalCleared; showComboPopup(`X${totalCleared} MULTIPLIER!`); } else if(bbCombo > 1) { points += bbCombo * 10; showComboPopup(`COMBO x${bbCombo}!`); } addScore(points); saveBBState(); setTimeout(checkAllClear, 50); checkGameOver(); }, 350); return totalCleared; 
+                setTimeout(() => { 
+                    document.querySelector('.bb-game-container').classList.remove('shake-screen'); 
+                    // Базовые очки за линии (10 за каждую)
+                    let points = totalCleared * 10; 
+                    // Множитель за несколько линий одновременно
+                    if (totalCleared >= 2) { 
+                        points = points * totalCleared; 
+                    }
+                    // Комбо множитель применяется ВСЕГДА когда комбо > 1
+                    if (bbCombo > 1) {
+                        points = points * bbCombo;
+                        showComboPopup(`COMBO x${bbCombo}!`);
+                    } else if (totalCleared >= 2) {
+                        showComboPopup(`X${totalCleared} LINES!`);
+                    }
+                    addScore(points); 
+                    saveBBState(); 
+                    setTimeout(checkAllClear, 50); 
+                    checkGameOver(); 
+                }, 350); 
+                return totalCleared; 
             } return 0; 
         }
         function fireNeonParticles(row, col, colorClass) {
