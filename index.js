@@ -595,8 +595,6 @@ const checkersGames = new Map(); // inline_message_id -> game state
 
 const CH_WHITE = '⚪';
 const CH_BLACK = '⚫';
-const CH_WHITE_KING = '⚪👑';
-const CH_BLACK_KING = '⚫👑';
 const CH_EMPTY = '·';
 
 function createCheckersBoard() {
@@ -628,6 +626,7 @@ function getCheckersKeyboard(board, gameId, selectedPos = null) {
         for (let c = 0; c < 8; c++) {
             const cell = board[r][c];
             let text;
+            let color = undefined; // цвет кнопки
             
             if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
                 text = '🟢';
@@ -636,17 +635,24 @@ function getCheckersKeyboard(board, gameId, selectedPos = null) {
             } else if (cell.type === 'empty') {
                 text = CH_EMPTY; // пустая тёмная
             } else if (cell.type === 'piece') {
+                text = cell.color === 'white' ? CH_WHITE : CH_BLACK;
+                // Дамки - красная кнопка
                 if (cell.isKing) {
-                    text = cell.color === 'white' ? CH_WHITE_KING : CH_BLACK_KING;
-                } else {
-                    text = cell.color === 'white' ? CH_WHITE : CH_BLACK;
+                    color = 'destructive';
                 }
             }
             
-            row.push({
+            const button = {
                 text: text,
                 callback_data: `ch_${gameId}_${r}_${c}`
-            });
+            };
+            
+            // Добавляем цвет кнопки если есть
+            if (color) {
+                button.color = color;
+            }
+            
+            row.push(button);
         }
         keyboard.push(row);
     }
@@ -659,24 +665,78 @@ function getValidMoves(board, r, c, color) {
     const piece = board[r][c];
     if (piece.type !== 'piece' || piece.color !== color) return { moves: [], captures: [] };
     
-    const directions = piece.isKing ? 
-        [[-1, -1], [-1, 1], [1, -1], [1, 1]] : 
+    const allDirections = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+    
+    // Обычные ходы - только вперёд для обычных шашек, все направления для дамок
+    const moveDirections = piece.isKing ? 
+        allDirections : 
         (color === 'white' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]);
     
-    for (const [dr, dc] of directions) {
-        const nr = r + dr;
-        const nc = c + dc;
+    // Взятие - во все стороны для всех шашек!
+    const captureDirections = allDirections;
+    
+    if (piece.isKing) {
+        // Дамка - ходит на любое количество клеток по диагонали
+        for (const [dr, dc] of moveDirections) {
+            let nr = r + dr;
+            let nc = c + dc;
+            
+            // Ищем пустые клетки или вражескую шашку
+            while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const target = board[nr][nc];
+                
+                if (target.type === 'empty') {
+                    moves.push({ r: nr, c: nc });
+                } else if (target.type === 'piece' && target.color !== color) {
+                    // Нашли вражескую шашку - проверяем можно ли перепрыгнуть
+                    const jr = nr + dr;
+                    const jc = nc + dc;
+                    if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'empty') {
+                        // Можно бить, добавляем все пустые клетки за шашкой
+                        let lr = jr;
+                        let lc = jc;
+                        while (lr >= 0 && lr < 8 && lc >= 0 && lc < 8 && board[lr][lc].type === 'empty') {
+                            captures.push({ r: lr, c: lc, capturedR: nr, capturedC: nc });
+                            lr += dr;
+                            lc += dc;
+                        }
+                    }
+                    break; // Дальше этой шашки не смотрим
+                } else {
+                    break; // Своя шашка или край доски
+                }
+                
+                nr += dr;
+                nc += dc;
+            }
+        }
+    } else {
+        // Обычная шашка - ходит на 1 клетку вперёд
+        for (const [dr, dc] of moveDirections) {
+            const nr = r + dr;
+            const nc = c + dc;
+            
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const target = board[nr][nc];
+                if (target.type === 'empty') {
+                    moves.push({ r: nr, c: nc });
+                }
+            }
+        }
         
-        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-            const target = board[nr][nc];
-            if (target.type === 'empty') {
-                moves.push({ r: nr, c: nc });
-            } else if (target.type === 'piece' && target.color !== color) {
-                // Проверяем возможность взятия
-                const jr = nr + dr;
-                const jc = nc + dc;
-                if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'empty') {
-                    captures.push({ r: jr, c: jc, capturedR: nr, capturedC: nc });
+        // Взятие - во все 4 стороны
+        for (const [dr, dc] of captureDirections) {
+            const nr = r + dr;
+            const nc = c + dc;
+            
+            if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+                const target = board[nr][nc];
+                if (target.type === 'piece' && target.color !== color) {
+                    const jr = nr + dr;
+                    const jc = nc + dc;
+                    if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'empty') {
+                        captures.push({ r: jr, c: jc, capturedR: nr, capturedC: nc });
+                    }
                 }
             }
         }
