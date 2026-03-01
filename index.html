@@ -691,7 +691,17 @@
         .shake-screen { animation: shakeGame 0.3s cubic-bezier(.36,.07,.19,.97) both; }
         @keyframes shakeGame { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-2px, 0, 0); } 40%, 60% { transform: translate3d(2px, 0, 0); } }
 
-        .bb-cell.pre-clear { opacity: 1; transform: scale(0.95); transition: background-color 0.1s, transform 0.1s; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        .bb-cell.pre-clear { 
+            opacity: 1; 
+            transform: scale(0.95); 
+            transition: background-color 0.1s, transform 0.1s; 
+            box-shadow: 
+                inset 0 2px 0 rgba(255,255,255,0.5),
+                inset 0 -2px 0 rgba(0,0,0,0.3),
+                inset 2px 0 0 rgba(255,255,255,0.3),
+                inset -2px 0 0 rgba(0,0,0,0.2),
+                0 0 8px currentColor !important;
+        }
         .bb-footer { position: absolute; bottom: calc(30px + var(--safe-bottom)); width: 100%; height: 120px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; } 
         .bb-shape-container { flex: 1; height: 100%; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; } 
         .bb-shape-preview { display: grid; gap: 2px; pointer-events: none; touch-action: none; transition: opacity 0.2s; } 
@@ -2538,7 +2548,7 @@
         
         function checkPlacement(r, c) { 
             document.querySelectorAll('.bb-cell.bb-shadow').forEach(c => c.classList.remove('bb-shadow', 'bb-c-1','bb-c-2','bb-c-3','bb-c-4','bb-c-5','bb-c-6','bb-c-7')); 
-            document.querySelectorAll('.bb-cell.pre-clear').forEach(c => { c.classList.remove('pre-clear'); c.style.backgroundColor = ''; });
+            document.querySelectorAll('.bb-cell.pre-clear').forEach(c => { c.classList.remove('pre-clear'); c.style.background = ''; });
             if(canPlace(dragData.matrix, r, c)) { 
                 drawShadow(dragData.matrix, r, c, dragData.color); 
                 dragData.validPos = { r: r, c: c }; 
@@ -2550,14 +2560,21 @@
                 colsToClear.forEach(cc => { for(let rr=0; rr<BB_ROWS; rr++) highlightPreClear(rr, cc, dragData.color); });
             } else { dragData.validPos = null; } 
         }
-        function highlightPreClear(r, c, colorClass) { const cell = document.querySelector(`.bb-cell[data-r="${r}"][data-c="${c}"]`); if(cell) { cell.classList.add('pre-clear'); const hex = COLOR_MAP[colorClass] || '#007aff'; cell.style.backgroundColor = hexToRgba(hex, 0.4); } }
+        function highlightPreClear(r, c, colorClass) { 
+            const cell = document.querySelector(`.bb-cell[data-r="${r}"][data-c="${c}"]`); 
+            if(cell) { 
+                cell.classList.add('pre-clear'); 
+                const hex = COLOR_MAP[colorClass] || '#007aff'; 
+                cell.style.background = hexToRgba(hex, 0.5); 
+            } 
+        }
         function canPlace(matrix, r, c) { for(let i=0; i<matrix.length; i++) { for(let j=0; j<matrix[0].length; j++) { if(matrix[i][j] === 1) { let nr = r + i; let nc = c + j; if(nr < 0 || nr >= BB_ROWS || nc < 0 || nc >= BB_COLS || bbGrid[nr][nc] !== 0) return false; } } } return true; }
         function drawShadow(matrix, r, c, color) { for(let i=0; i<matrix.length; i++) { for(let j=0; j<matrix[0].length; j++) { if(matrix[i][j] === 1) { const cell = document.querySelector(`.bb-cell[data-r="${r+i}"][data-c="${c+j}"]`); if(cell) cell.classList.add('bb-shadow', color); } } } }
         
         function onTouchEnd(e) { 
             document.removeEventListener('touchmove', onTouchMove); document.removeEventListener('touchend', onTouchEnd); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onTouchEnd); 
             if(dragGhost) dragGhost.remove(); 
-            document.querySelectorAll('.bb-cell.pre-clear').forEach(c => { c.classList.remove('pre-clear'); c.style.backgroundColor = ''; });
+            document.querySelectorAll('.bb-cell.pre-clear').forEach(c => { c.classList.remove('pre-clear'); c.style.background = ''; });
             document.querySelectorAll('.bb-cell.bb-shadow').forEach(c => c.classList.remove('bb-shadow', 'bb-c-1','bb-c-2','bb-c-3','bb-c-4','bb-c-5','bb-c-6','bb-c-7')); 
             const original = document.querySelector(`#shape${dragData.slotId} .bb-shape-preview`); if(original) original.style.opacity = 1; 
             if(dragData.validPos) { 
