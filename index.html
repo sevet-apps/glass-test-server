@@ -274,6 +274,126 @@
         .lb-sticky-user .lb-val { color: rgba(255,255,255,0.9); }
         .lb-sticky-user .lb-name { color: white; }
 
+        /* Settings Button in Profile Header */
+        .settings-btn {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 32px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-color);
+            transition: background 0.2s;
+        }
+        .settings-btn:active { background: var(--hover-bg); }
+
+        /* Settings Sheet Styles */
+        .settings-sheet { max-height: 85vh; }
+        
+        .settings-section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8e8e93;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 20px 0 10px 4px;
+        }
+        .settings-section-label:first-of-type { margin-top: 10px; }
+        
+        .language-selector {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-btn.active {
+            background: var(--card-bg);
+            border-color: var(--accent);
+        }
+        .lang-btn:active { transform: scale(0.97); }
+        
+        .settings-group-sheet {
+            background: var(--glass-bg);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+        }
+        
+        .settings-row-sheet {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 0.5px solid rgba(128,128,128,0.2);
+        }
+        .settings-row-sheet:last-child { border-bottom: none; }
+        
+        .settings-label-sheet {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .settings-icon {
+            width: 22px;
+            height: 22px;
+            color: var(--text-secondary);
+        }
+        
+        .settings-footer-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding-bottom: env(safe-area-inset-bottom, 10px);
+        }
+        
+        .settings-footer-btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        .settings-footer-btn:active { transform: scale(0.97); opacity: 0.9; }
+        .settings-footer-btn.secondary {
+            background: var(--glass-bg);
+            color: var(--text-color);
+            border: 1px solid var(--glass-border);
+        }
+        .settings-footer-btn.primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Fix header position for settings button */
+        .header { position: relative; }
+
         .settings-group { background: var(--glass-bg); border-radius: 16px; padding: 0 16px; margin-bottom: 20px; border: 1px solid var(--glass-border); width: 100%; }
         .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 0.5px solid rgba(128,128,128,0.2); }
         .settings-row:last-child { border-bottom: none; }
@@ -281,8 +401,9 @@
         .theme-switch { position: relative; width: 64px; height: 34px; background: var(--toggle-bg); border-radius: 20px; cursor: pointer; padding: 2px; } 
         .theme-icons { position: absolute; top:0; left:0; width:100%; height:100%; display: flex; justify-content: space-between; align-items: center; padding: 0 7px; color: var(--icon-color); pointer-events: none; } 
         .switch-circle { position: absolute; top: 2px; left: 2px; width: 30px; height: 30px; background: var(--toggle-circle); border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1); z-index: 2; } 
-        [data-theme="dark"] #themeToggle .switch-circle { transform: translateX(30px); }
-        #liteToggle.active .switch-circle { transform: translateX(30px); }
+        [data-theme="dark"] #themeToggle .switch-circle, [data-theme="dark"] #themeToggleSheet .switch-circle { transform: translateX(30px); }
+        #liteToggle.active .switch-circle, #liteToggleSheet.active .switch-circle { transform: translateX(30px); }
+        #vibrationToggle.active .switch-circle { transform: translateX(30px); }
 
         .toggle-labels { position: absolute; width: 100%; height: 100%; top:0; left:0; display: flex; justify-content: space-between; align-items: center; padding: 0 8px; font-size: 10px; font-weight: 800; color: #8e8e93; pointer-events: none; }
         
@@ -1168,38 +1289,19 @@
     </div>
 
     <div id="view-profile" class="screen"> 
-        <div class="header"><div class="app-title">Профиль</div></div> 
+        <div class="header">
+            <div class="app-title">Профиль</div>
+            <button class="settings-btn" onclick="openSettingsSheet()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                    <line x1="4" y1="8" x2="20" y2="8"></line>
+                    <line x1="4" y1="16" x2="20" y2="16"></line>
+                </svg>
+            </button>
+        </div> 
         <div style="display:flex; flex-direction:column; align-items:center;"> 
             <img id="user-avatar" src="" alt="" class="avatar"> 
             <h2 id="user-name" style="margin:0;">Loading...</h2> 
             <p id="user-id" style="color:#8e8e93; margin:5px 0 20px;">@username</p> 
-            
-            <div class="settings-group">
-                <div class="settings-row">
-                    <div class="settings-label">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                        Тема
-                    </div>
-                    <div class="theme-switch" id="themeToggle" onclick="toggleTheme()"> 
-                        <div class="theme-icons"> 
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg> 
-                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> 
-                        </div> 
-                        <div class="switch-circle"></div> 
-                    </div>
-                </div>
-                
-                <div class="settings-row">
-                    <div class="settings-label">
-                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                        Упрощенная графика
-                    </div>
-                    <div class="theme-switch" id="liteToggle" onclick="toggleLiteMode()"> 
-                        <div class="toggle-labels"><div>OFF</div><div>ON</div></div>
-                        <div class="switch-circle"></div> 
-                    </div>
-                </div>
-            </div>
 
             <div class="records-section">
                 <div class="records-title">Мои рекорды</div>
@@ -1477,6 +1579,77 @@
         </div>
     </div>
     
+    <!-- Settings Bottom Sheet -->
+    <div class="bottom-sheet-overlay" id="settingsSheet" onclick="closeSettingsSheet()">
+        <div class="bottom-sheet settings-sheet" onclick="event.stopPropagation()">
+            <div class="bottom-sheet-handle"></div>
+            <div class="bottom-sheet-title" data-i18n="settings">Настройки</div>
+            
+            <!-- Язык -->
+            <div class="settings-section-label" data-i18n="language">ЯЗЫК</div>
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="ru" onclick="setLanguage('ru')">
+                    🇷🇺 RU
+                </button>
+                <button class="lang-btn" data-lang="en" onclick="setLanguage('en')">
+                    🇺🇸 EN
+                </button>
+            </div>
+            
+            <!-- Тема -->
+            <div class="settings-section-label" data-i18n="appearance">ВНЕШНИЙ ВИД</div>
+            <div class="settings-group-sheet">
+                <div class="settings-row-sheet">
+                    <div class="settings-label-sheet">
+                        <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <span data-i18n="theme">Тема</span>
+                    </div>
+                    <div class="theme-switch" id="themeToggleSheet" onclick="toggleTheme()"> 
+                        <div class="theme-icons"> 
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg> 
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> 
+                        </div> 
+                        <div class="switch-circle"></div> 
+                    </div>
+                </div>
+                
+                <div class="settings-row-sheet">
+                    <div class="settings-label-sheet">
+                        <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                        <span data-i18n="simplifiedGraphics">Упрощённая графика</span>
+                    </div>
+                    <div class="theme-switch" id="liteToggleSheet" onclick="toggleLiteMode()"> 
+                        <div class="toggle-labels"><div>OFF</div><div>ON</div></div>
+                        <div class="switch-circle"></div> 
+                    </div>
+                </div>
+                
+                <div class="settings-row-sheet">
+                    <div class="settings-label-sheet">
+                        <svg class="settings-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="8" y="4" width="8" height="16" rx="2"></rect>
+                            <path d="M4 9v6"></path>
+                            <path d="M20 9v6"></path>
+                            <path d="M2 11v2"></path>
+                            <path d="M22 11v2"></path>
+                        </svg>
+                        <span data-i18n="vibration">Вибрация</span>
+                    </div>
+                    <div class="theme-switch" id="vibrationToggle" onclick="toggleVibration()"> 
+                        <div class="toggle-labels"><div>OFF</div><div>ON</div></div>
+                        <div class="switch-circle"></div> 
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Кнопки снизу -->
+            <div class="settings-footer-buttons">
+                <button class="settings-footer-btn secondary" onclick="openPrivacyPolicy()" data-i18n="privacy">Политика</button>
+                <button class="settings-footer-btn primary" onclick="openSupport()" data-i18n="support">Поддержка</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>
     
@@ -1627,6 +1800,8 @@
             updateBackgroundPatterns();
             applyTheme();
             applyLiteMode();
+            applyVibration();
+            applyLanguage();
             loadProfile();
             setTimeout(syncLocalStatsToServer, 2000);
             
@@ -1731,15 +1906,15 @@
         }
 
         function applyTheme() { updateBackgroundPatterns(); document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light'); if(tg.headerColor) tg.headerColor = isDark ? '#000000' : '#f2f2f7'; if(tg.backgroundColor) tg.backgroundColor = isDark ? '#000000' : '#f2f2f7'; }
-        function toggleTheme() { isDark = !isDark; applyTheme(); tg.HapticFeedback.selectionChanged(); }
+        function toggleTheme() { isDark = !isDark; applyTheme(); if(vibrationEnabled) tg.HapticFeedback.selectionChanged(); }
         
         function applyLiteMode() { 
-            const el = document.getElementById('liteToggle');
+            const el = document.getElementById('liteToggleSheet');
             if(isLiteMode) {
-                el.classList.add('active');
+                el?.classList.add('active');
                 document.body.classList.add('lite-mode');
             } else {
-                el.classList.remove('active');
+                el?.classList.remove('active');
                 document.body.classList.remove('lite-mode');
             }
         }
@@ -1747,7 +1922,110 @@
             isLiteMode = !isLiteMode;
             localStorage.setItem('lite_mode', isLiteMode);
             applyLiteMode();
-            tg.HapticFeedback.selectionChanged();
+            if(vibrationEnabled) tg.HapticFeedback.selectionChanged();
+        }
+        
+        // Vibration toggle
+        let vibrationEnabled = localStorage.getItem('vibration') !== 'false';
+        function applyVibration() {
+            const el = document.getElementById('vibrationToggle');
+            if(vibrationEnabled) {
+                el?.classList.add('active');
+            } else {
+                el?.classList.remove('active');
+            }
+        }
+        function toggleVibration() {
+            vibrationEnabled = !vibrationEnabled;
+            localStorage.setItem('vibration', vibrationEnabled);
+            applyVibration();
+            if(vibrationEnabled) tg.HapticFeedback.selectionChanged();
+        }
+        
+        // Settings Sheet
+        function openSettingsSheet() {
+            document.getElementById('settingsSheet').classList.add('visible');
+            applyLiteMode();
+            applyVibration();
+            if(vibrationEnabled) tg.HapticFeedback.impactOccurred('light');
+        }
+        function closeSettingsSheet() {
+            document.getElementById('settingsSheet').classList.remove('visible');
+        }
+        
+        // Language
+        let currentLang = localStorage.getItem('language') || 'ru';
+        const translations = {
+            ru: {
+                settings: 'Настройки',
+                language: 'ЯЗЫК',
+                appearance: 'ВНЕШНИЙ ВИД',
+                theme: 'Тема',
+                simplifiedGraphics: 'Упрощённая графика',
+                vibration: 'Вибрация',
+                privacy: 'Политика',
+                support: 'Поддержка',
+                profile: 'Профиль',
+                tops: 'Топы',
+                games: 'Игры',
+                myRecords: 'Мои рекорды',
+                referralProgram: 'Реферальная программа',
+                inviteFriends: 'Приглашайте друзей и поднимайтесь выше в топе',
+                conditions: 'Условия',
+                invite: 'Пригласить',
+                invited: 'Приглашено',
+                rankInTop: 'Место в топе'
+            },
+            en: {
+                settings: 'Settings',
+                language: 'LANGUAGE',
+                appearance: 'APPEARANCE',
+                theme: 'Theme',
+                simplifiedGraphics: 'Simplified graphics',
+                vibration: 'Vibration',
+                privacy: 'Privacy',
+                support: 'Support',
+                profile: 'Profile',
+                tops: 'Leaderboards',
+                games: 'Games',
+                myRecords: 'My Records',
+                referralProgram: 'Referral Program',
+                inviteFriends: 'Invite friends and climb the leaderboard',
+                conditions: 'Terms',
+                invite: 'Invite',
+                invited: 'Invited',
+                rankInTop: 'Rank in top'
+            }
+        };
+        
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('language', lang);
+            applyLanguage();
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === lang);
+            });
+            if(vibrationEnabled) tg.HapticFeedback.selectionChanged();
+        }
+        
+        function applyLanguage() {
+            const t = translations[currentLang] || translations.ru;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if(t[key]) el.textContent = t[key];
+            });
+            // Update lang buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.lang === currentLang);
+            });
+        }
+        
+        function openPrivacyPolicy() {
+            tg.openLink('https://telegra.ph/Politika-konfidencialnosti-03-01-19');
+        }
+        
+        function openSupport() {
+            tg.openTelegramLink('https://t.me/lagaet');
         }
 
         function switchTab(t, el) { 
@@ -1756,7 +2034,7 @@
             if(t==='games') document.getElementById('view-games').classList.add('active'); 
             else if(t==='leaderboard') document.getElementById('view-leaderboard').classList.add('active'); 
             else { document.getElementById('view-profile').classList.add('active'); loadProfile(); } 
-            if(el) el.classList.add('active'); tg.HapticFeedback.selectionChanged(); 
+            if(el) el.classList.add('active'); if(vibrationEnabled) tg.HapticFeedback.selectionChanged(); 
         }
 
         function openGameModal(game) { 
