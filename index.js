@@ -626,33 +626,25 @@ function getCheckersKeyboard(board, gameId, selectedPos = null) {
         for (let c = 0; c < 8; c++) {
             const cell = board[r][c];
             let text;
-            let color = undefined; // цвет кнопки
             
             if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
                 text = '🟢';
             } else if (cell.type === 'light') {
-                text = ' '; // пустая светлая
+                text = ' ';
             } else if (cell.type === 'empty') {
-                text = CH_EMPTY; // пустая тёмная
+                text = CH_EMPTY;
             } else if (cell.type === 'piece') {
-                text = cell.color === 'white' ? CH_WHITE : CH_BLACK;
-                // Дамки - красная кнопка
                 if (cell.isKing) {
-                    color = 'destructive';
+                    text = cell.color === 'white' ? '⬜' : '⬛';
+                } else {
+                    text = cell.color === 'white' ? CH_WHITE : CH_BLACK;
                 }
             }
             
-            const button = {
+            row.push({
                 text: text,
                 callback_data: `ch_${gameId}_${r}_${c}`
-            };
-            
-            // Добавляем цвет кнопки если есть
-            if (color) {
-                button.color = color;
-            }
-            
-            row.push(button);
+            });
         }
         keyboard.push(row);
     }
