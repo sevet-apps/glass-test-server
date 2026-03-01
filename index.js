@@ -595,11 +595,9 @@ const checkersGames = new Map(); // inline_message_id -> game state
 
 const CH_WHITE = '⚪';
 const CH_BLACK = '⚫';
-const CH_WHITE_KING = '👑';
-const CH_BLACK_KING = '🔴';
-const CH_EMPTY_LIGHT = '⬜';
-const CH_EMPTY_DARK = '🟫';
-const CH_SELECTED = '🟢';
+const CH_WHITE_KING = '⚪👑';
+const CH_BLACK_KING = '⚫👑';
+const CH_EMPTY = '·';
 
 function createCheckersBoard() {
     // 8x8 доска, шашки на тёмных клетках
@@ -609,13 +607,13 @@ function createCheckersBoard() {
         for (let c = 0; c < 8; c++) {
             const isDark = (r + c) % 2 === 1;
             if (!isDark) {
-                row.push({ type: 'light' });
+                row.push({ type: 'light' }); // светлые клетки - нельзя ходить
             } else if (r < 3) {
                 row.push({ type: 'piece', color: 'black', isKing: false });
             } else if (r > 4) {
                 row.push({ type: 'piece', color: 'white', isKing: false });
             } else {
-                row.push({ type: 'dark' });
+                row.push({ type: 'empty' }); // пустая тёмная клетка
             }
         }
         board.push(row);
@@ -632,11 +630,11 @@ function getCheckersKeyboard(board, gameId, selectedPos = null) {
             let text;
             
             if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
-                text = CH_SELECTED;
+                text = '🟢';
             } else if (cell.type === 'light') {
-                text = CH_EMPTY_LIGHT;
-            } else if (cell.type === 'dark') {
-                text = CH_EMPTY_DARK;
+                text = ' '; // пустая светлая
+            } else if (cell.type === 'empty') {
+                text = CH_EMPTY; // пустая тёмная
             } else if (cell.type === 'piece') {
                 if (cell.isKing) {
                     text = cell.color === 'white' ? CH_WHITE_KING : CH_BLACK_KING;
@@ -671,13 +669,13 @@ function getValidMoves(board, r, c, color) {
         
         if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
             const target = board[nr][nc];
-            if (target.type === 'dark') {
+            if (target.type === 'empty') {
                 moves.push({ r: nr, c: nc });
             } else if (target.type === 'piece' && target.color !== color) {
                 // Проверяем возможность взятия
                 const jr = nr + dr;
                 const jc = nc + dc;
-                if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'dark') {
+                if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'empty') {
                     captures.push({ r: jr, c: jc, capturedR: nr, capturedC: nc });
                 }
             }
@@ -1380,8 +1378,8 @@ if (BOT_TOKEN) {
                         // Выполняем взятие
                         const piece = game.board[game.selected.r][game.selected.c];
                         game.board[row][col] = piece;
-                        game.board[game.selected.r][game.selected.c] = { type: 'dark' };
-                        game.board[capture.capturedR][capture.capturedC] = { type: 'dark' };
+                        game.board[game.selected.r][game.selected.c] = { type: 'empty' };
+                        game.board[capture.capturedR][capture.capturedC] = { type: 'empty' };
                         
                         // Проверяем превращение в дамку
                         if ((playerColor === 'white' && row === 0) || (playerColor === 'black' && row === 7)) {
@@ -1404,7 +1402,7 @@ if (BOT_TOKEN) {
                         // Обычный ход
                         const piece = game.board[game.selected.r][game.selected.c];
                         game.board[row][col] = piece;
-                        game.board[game.selected.r][game.selected.c] = { type: 'dark' };
+                        game.board[game.selected.r][game.selected.c] = { type: 'empty' };
                         
                         // Проверяем превращение в дамку
                         if ((playerColor === 'white' && row === 0) || (playerColor === 'black' && row === 7)) {
