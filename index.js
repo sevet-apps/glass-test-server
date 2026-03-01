@@ -590,6 +590,163 @@ function checkTTTWinner(board) {
     return null;
 }
 
+// --- CHECKERS GAME ---
+const checkersGames = new Map(); // inline_message_id -> game state
+
+const CH_WHITE = '⚪';
+const CH_BLACK = '⚫';
+const CH_WHITE_KING = '👑';
+const CH_BLACK_KING = '🔴';
+const CH_EMPTY_LIGHT = '⬜';
+const CH_EMPTY_DARK = '🟫';
+const CH_SELECTED = '🟢';
+
+function createCheckersBoard() {
+    // 8x8 доска, шашки на тёмных клетках
+    const board = [];
+    for (let r = 0; r < 8; r++) {
+        const row = [];
+        for (let c = 0; c < 8; c++) {
+            const isDark = (r + c) % 2 === 1;
+            if (!isDark) {
+                row.push({ type: 'light' });
+            } else if (r < 3) {
+                row.push({ type: 'piece', color: 'black', isKing: false });
+            } else if (r > 4) {
+                row.push({ type: 'piece', color: 'white', isKing: false });
+            } else {
+                row.push({ type: 'dark' });
+            }
+        }
+        board.push(row);
+    }
+    return board;
+}
+
+function getCheckersKeyboard(board, gameId, selectedPos = null) {
+    const keyboard = [];
+    for (let r = 0; r < 8; r++) {
+        const row = [];
+        for (let c = 0; c < 8; c++) {
+            const cell = board[r][c];
+            let text;
+            
+            if (selectedPos && selectedPos.r === r && selectedPos.c === c) {
+                text = CH_SELECTED;
+            } else if (cell.type === 'light') {
+                text = CH_EMPTY_LIGHT;
+            } else if (cell.type === 'dark') {
+                text = CH_EMPTY_DARK;
+            } else if (cell.type === 'piece') {
+                if (cell.isKing) {
+                    text = cell.color === 'white' ? CH_WHITE_KING : CH_BLACK_KING;
+                } else {
+                    text = cell.color === 'white' ? CH_WHITE : CH_BLACK;
+                }
+            }
+            
+            row.push({
+                text: text,
+                callback_data: `ch_${gameId}_${r}_${c}`
+            });
+        }
+        keyboard.push(row);
+    }
+    return { inline_keyboard: keyboard };
+}
+
+function getValidMoves(board, r, c, color) {
+    const moves = [];
+    const captures = [];
+    const piece = board[r][c];
+    if (piece.type !== 'piece' || piece.color !== color) return { moves: [], captures: [] };
+    
+    const directions = piece.isKing ? 
+        [[-1, -1], [-1, 1], [1, -1], [1, 1]] : 
+        (color === 'white' ? [[-1, -1], [-1, 1]] : [[1, -1], [1, 1]]);
+    
+    for (const [dr, dc] of directions) {
+        const nr = r + dr;
+        const nc = c + dc;
+        
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+            const target = board[nr][nc];
+            if (target.type === 'dark') {
+                moves.push({ r: nr, c: nc });
+            } else if (target.type === 'piece' && target.color !== color) {
+                // Проверяем возможность взятия
+                const jr = nr + dr;
+                const jc = nc + dc;
+                if (jr >= 0 && jr < 8 && jc >= 0 && jc < 8 && board[jr][jc].type === 'dark') {
+                    captures.push({ r: jr, c: jc, capturedR: nr, capturedC: nc });
+                }
+            }
+        }
+    }
+    
+    return { moves, captures };
+}
+
+function hasAnyCaptures(board, color) {
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const cell = board[r][c];
+            if (cell.type === 'piece' && cell.color === color) {
+                const { captures } = getValidMoves(board, r, c, color);
+                if (captures.length > 0) return true;
+            }
+        }
+    }
+    return false;
+}
+
+function hasAnyMoves(board, color) {
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            const cell = board[r][c];
+            if (cell.type === 'piece' && cell.color === color) {
+                const { moves, captures } = getValidMoves(board, r, c, color);
+                if (moves.length > 0 || captures.length > 0) return true;
+            }
+        }
+    }
+    return false;
+}
+
+function countPieces(board, color) {
+    let count = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (board[r][c].type === 'piece' && board[r][c].color === color) count++;
+        }
+    }
+    return count;
+}
+
+// Функция для обновления статистики игр в шашки
+async function incrementCheckersGames(oderId) {
+    try {
+        // Получаем текущее значение
+        const { data } = await supabase
+            .from('users')
+            .select('checkers_total_pvp')
+            .eq('telegram_id', oderId)
+            .single();
+        
+        const current = data?.checkers_total_pvp || 0;
+        
+        // Обновляем
+        await supabase
+            .from('users')
+            .update({ checkers_total_pvp: current + 1 })
+            .eq('telegram_id', oderId);
+            
+        console.log(`Checkers games updated for user ${oderId}: ${current + 1}`);
+    } catch (e) {
+        console.error('Error updating checkers stats:', e.message);
+    }
+}
+
 function getUserDisplayName(user) {
     if (user.username) return '@' + user.username;
     return user.first_name || 'Игрок';
@@ -713,9 +870,9 @@ if (BOT_TOKEN) {
                 type: 'article',
                 id: helpId,
                 title: '🎮 Spark Games',
-                description: 'Топы игр и крестики-нолики',
+                description: 'Топы игр, крестики-нолики и шашки',
                 input_message_content: {
-                    message_text: `🎮 <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n\n📊 Напишите: @spark_beta_bot [команда]`,
+                    message_text: `🎮 <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n• шашки\n\n📊 Напишите: @spark_beta_bot [команда]`,
                     parse_mode: 'HTML'
                 },
                 reply_markup: {
@@ -748,6 +905,30 @@ if (BOT_TOKEN) {
                     parse_mode: 'HTML'
                 },
                 reply_markup: getTTTKeyboard(createTTTBoard(), gameId)
+            });
+        }
+        // Шашки
+        else if (queryText.includes('шашки') || queryText.includes('checkers')) {
+            const gameId = `ch_${userId}_${Date.now()}`;
+            const userName = getUserDisplayName(user);
+            
+            inlineCache.set(gameId, {
+                type: 'checkers',
+                creator: user,
+                creatorName: userName
+            });
+            setTimeout(() => inlineCache.delete(gameId), 10 * 60 * 1000);
+            
+            results.push({
+                type: 'article',
+                id: gameId,
+                title: '⚪⚫ Шашки',
+                description: 'Сыграйте в шашки с кем-то из чата!',
+                input_message_content: {
+                    message_text: `🕹 <b>${userName}</b> хочет сыграть в шашки!\n\nНажмите на любую свою шашку, чтобы принять вызов.`,
+                    parse_mode: 'HTML'
+                },
+                reply_markup: getCheckersKeyboard(createCheckersBoard(), gameId)
             });
         }
         else {
@@ -846,19 +1027,17 @@ if (BOT_TOKEN) {
         if (cached?.type === 'ttt') {
             tttGames.set(inlineMessageId, {
                 board: createTTTBoard(),
-                playerX: cached.creator, // Создатель - X
-                playerO: null, // Ещё не присоединился
+                playerX: cached.creator,
+                playerO: null,
                 playerXName: cached.creatorName,
                 playerOName: null,
                 currentTurn: 'X',
                 gameId: resultId,
-                status: 'waiting' // waiting, playing, finished
+                status: 'waiting'
             });
             console.log('TTT game created:', inlineMessageId);
-            // Удаляем через 30 минут
             setTimeout(() => tttGames.delete(inlineMessageId), 30 * 60 * 1000);
             
-            // Редактируем с Premium эмодзи
             try {
                 await bot.editMessageText(
                     `${EMOJI.joystick} <b>${cached.creatorName}</b> хочет сыграть в крестики-нолики!\n\nНажмите любую клетку, чтобы принять вызов.`,
@@ -874,11 +1053,42 @@ if (BOT_TOKEN) {
             return;
         }
         
+        // Если это шашки - сохраняем игру
+        if (cached?.type === 'checkers') {
+            checkersGames.set(inlineMessageId, {
+                board: createCheckersBoard(),
+                playerWhite: cached.creator,
+                playerBlack: null,
+                playerWhiteName: cached.creatorName,
+                playerBlackName: null,
+                currentTurn: 'white',
+                selected: null,
+                gameId: resultId,
+                status: 'waiting'
+            });
+            console.log('Checkers game created:', inlineMessageId);
+            setTimeout(() => checkersGames.delete(inlineMessageId), 30 * 60 * 1000);
+            
+            try {
+                await bot.editMessageText(
+                    `${EMOJI.joystick} <b>${cached.creatorName}</b> хочет сыграть в шашки!\n\nНажмите на любую шашку, чтобы принять вызов.`,
+                    {
+                        inline_message_id: inlineMessageId,
+                        parse_mode: 'HTML',
+                        reply_markup: getCheckersKeyboard(createCheckersBoard(), resultId)
+                    }
+                );
+            } catch (e) {
+                console.error('Checkers edit error:', e.message);
+            }
+            return;
+        }
+        
         // Если это help - редактируем с Premium эмодзи
         if (cached?.type === 'help') {
             try {
                 await bot.editMessageText(
-                    `${EMOJI.game} <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n\n${EMOJI.chart} Напишите: @spark_beta_bot [команда]`,
+                    `${EMOJI.game} <b>Spark Games</b>\n\n<b>Топы:</b>\n• Block Blast\n• Сапёр\n• Башня\n• Судоку\n• Шашки\n• Вордли\n\n<b>Игры:</b>\n• крестики-нолики\n• шашки\n\n${EMOJI.chart} Напишите: @spark_beta_bot [команда]`,
                     {
                         inline_message_id: inlineMessageId,
                         parse_mode: 'HTML',
@@ -939,141 +1149,356 @@ if (BOT_TOKEN) {
         const user = callbackQuery.from;
         const inlineMessageId = callbackQuery.inline_message_id;
         
-        // Проверяем, что это крестики-нолики
-        if (!data.startsWith('ttt_') || !inlineMessageId) {
+        if (!inlineMessageId) {
             try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e) {}
             return;
         }
         
-        const parts = data.split('_');
-        const row = parseInt(parts[parts.length - 2]);
-        const col = parseInt(parts[parts.length - 1]);
-        
-        const game = tttGames.get(inlineMessageId);
-        
-        if (!game) {
-            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' }); } catch(e) {}
-            return;
-        }
-        
-        const userName = getUserDisplayName(user);
-        
-        // Если игра ждёт второго игрока
-        if (game.status === 'waiting') {
-            // Создатель не может играть сам с собой
-            if (user.id === game.playerX.id) {
-                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' }); } catch(e) {}
+        // === КРЕСТИКИ-НОЛИКИ ===
+        if (data.startsWith('ttt_')) {
+            const parts = data.split('_');
+            const row = parseInt(parts[parts.length - 2]);
+            const col = parseInt(parts[parts.length - 1]);
+            
+            const game = tttGames.get(inlineMessageId);
+            
+            if (!game) {
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' }); } catch(e) {}
                 return;
             }
             
-            // Второй игрок присоединяется
-            game.playerO = user;
-            game.playerOName = userName;
-            game.status = 'playing';
+            const userName = getUserDisplayName(user);
             
-            // Обновляем сообщение
-            try {
-                await bot.editMessageText(
-                    `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${game.playerXName} (❌)`,
-                    {
-                        inline_message_id: inlineMessageId,
-                        parse_mode: 'HTML',
-                        reply_markup: getTTTKeyboard(game.board, game.gameId)
-                    }
-                );
-                await bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${game.playerXName}` });
-            } catch (e) {
-                console.error('Edit error:', e.message);
-                try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
-            }
-            return;
-        }
-        
-        // Игра идёт
-        if (game.status === 'playing') {
-            // Проверяем, что ходит правильный игрок
-            const isPlayerX = user.id === game.playerX.id;
-            const isPlayerO = user.id === game.playerO?.id;
-            
-            if (!isPlayerX && !isPlayerO) {
-                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' }); } catch(e) {}
-                return;
-            }
-            
-            const expectedSymbol = game.currentTurn;
-            const isCorrectTurn = (expectedSymbol === 'X' && isPlayerX) || (expectedSymbol === 'O' && isPlayerO);
-            
-            if (!isCorrectTurn) {
-                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' }); } catch(e) {}
-                return;
-            }
-            
-            // Проверяем, что клетка свободна
-            if (game.board[row][col] !== TTT_EMPTY) {
-                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Клетка уже занята!' }); } catch(e) {}
-                return;
-            }
-            
-            // Делаем ход
-            game.board[row][col] = expectedSymbol === 'X' ? TTT_X : TTT_O;
-            
-            // Проверяем победителя
-            const winner = checkTTTWinner(game.board);
-            
-            if (winner) {
-                game.status = 'finished';
-                let resultText;
-                
-                if (winner === 'draw') {
-                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.handshake} <b>Ничья!</b>`;
-                } else {
-                    const winnerName = winner === TTT_X ? game.playerXName : game.playerOName;
-                    const winnerSymbol = winner;
-                    resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.trophy} <b>${winnerName}</b> победил! ${winnerSymbol}`;
+            // Если игра ждёт второго игрока
+            if (game.status === 'waiting') {
+                if (user.id === game.playerX.id) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' }); } catch(e) {}
+                    return;
                 }
                 
+                // Второй игрок присоединяется
+                game.playerO = user;
+                game.playerOName = userName;
+                game.status = 'playing';
+                
+                // Рандомно определяем кто ходит первым
+                const firstIsX = Math.random() < 0.5;
+                game.currentTurn = firstIsX ? 'X' : 'O';
+                const firstPlayerName = firstIsX ? game.playerXName : game.playerOName;
+                const firstSymbol = firstIsX ? '❌' : '⭕';
+                
                 try {
-                    await bot.editMessageText(resultText, {
-                        inline_message_id: inlineMessageId,
-                        parse_mode: 'HTML',
-                        reply_markup: getTTTKeyboard(game.board, game.gameId)
-                    });
-                    await bot.answerCallbackQuery(callbackQuery.id, { text: winner === 'draw' ? 'Ничья!' : 'Победа!' });
+                    await bot.editMessageText(
+                        `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nПервый ход: ${firstPlayerName} (${firstSymbol})`,
+                        {
+                            inline_message_id: inlineMessageId,
+                            parse_mode: 'HTML',
+                            reply_markup: getTTTKeyboard(game.board, game.gameId)
+                        }
+                    );
+                    await bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${firstPlayerName}` });
                 } catch (e) {
                     console.error('Edit error:', e.message);
                     try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
                 }
-                
-                tttGames.delete(inlineMessageId);
                 return;
             }
             
-            // Меняем ход
-            game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
-            const nextPlayerName = game.currentTurn === 'X' ? game.playerXName : game.playerOName;
-            const nextSymbol = game.currentTurn === 'X' ? '❌' : '⭕';
-            
-            try {
-                await bot.editMessageText(
-                    `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${nextPlayerName} (${nextSymbol})`,
-                    {
-                        inline_message_id: inlineMessageId,
-                        parse_mode: 'HTML',
-                        reply_markup: getTTTKeyboard(game.board, game.gameId)
+            // Игра идёт
+            if (game.status === 'playing') {
+                const isPlayerX = user.id === game.playerX.id;
+                const isPlayerO = user.id === game.playerO?.id;
+                
+                if (!isPlayerX && !isPlayerO) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' }); } catch(e) {}
+                    return;
+                }
+                
+                const expectedSymbol = game.currentTurn;
+                const isCorrectTurn = (expectedSymbol === 'X' && isPlayerX) || (expectedSymbol === 'O' && isPlayerO);
+                
+                if (!isCorrectTurn) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' }); } catch(e) {}
+                    return;
+                }
+                
+                if (game.board[row][col] !== TTT_EMPTY) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Клетка уже занята!' }); } catch(e) {}
+                    return;
+                }
+                
+                game.board[row][col] = expectedSymbol === 'X' ? TTT_X : TTT_O;
+                
+                const winner = checkTTTWinner(game.board);
+                
+                if (winner) {
+                    game.status = 'finished';
+                    let resultText;
+                    
+                    if (winner === 'draw') {
+                        resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.handshake} <b>Ничья!</b>`;
+                    } else {
+                        const winnerName = winner === TTT_X ? game.playerXName : game.playerOName;
+                        resultText = `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\n${EMOJI.trophy} <b>${winnerName}</b> победил! ${winner}`;
                     }
-                );
-                await bot.answerCallbackQuery(callbackQuery.id);
-            } catch (e) {
-                console.error('Edit error:', e.message);
-                try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e2) {}
+                    
+                    try {
+                        await bot.editMessageText(resultText, {
+                            inline_message_id: inlineMessageId,
+                            parse_mode: 'HTML',
+                            reply_markup: getTTTKeyboard(game.board, game.gameId)
+                        });
+                        await bot.answerCallbackQuery(callbackQuery.id, { text: winner === 'draw' ? 'Ничья!' : 'Победа!' });
+                    } catch (e) {
+                        console.error('Edit error:', e.message);
+                    }
+                    
+                    tttGames.delete(inlineMessageId);
+                    return;
+                }
+                
+                game.currentTurn = game.currentTurn === 'X' ? 'O' : 'X';
+                const nextPlayerName = game.currentTurn === 'X' ? game.playerXName : game.playerOName;
+                const nextSymbol = game.currentTurn === 'X' ? '❌' : '⭕';
+                
+                try {
+                    await bot.editMessageText(
+                        `${EMOJI.joystick} <b>Крестики-нолики</b>\n\n${game.playerXName} (❌) vs ${game.playerOName} (⭕)\n\nХод: ${nextPlayerName} (${nextSymbol})`,
+                        {
+                            inline_message_id: inlineMessageId,
+                            parse_mode: 'HTML',
+                            reply_markup: getTTTKeyboard(game.board, game.gameId)
+                        }
+                    );
+                    await bot.answerCallbackQuery(callbackQuery.id);
+                } catch (e) {
+                    console.error('Edit error:', e.message);
+                }
+                return;
             }
-            return;
+            
+            if (game.status === 'finished') {
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' }); } catch(e) {}
+                return;
+            }
         }
         
-        // Игра завершена
-        if (game.status === 'finished') {
-            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' }); } catch(e) {}
-            return;
+        // === ШАШКИ ===
+        else if (data.startsWith('ch_')) {
+            const parts = data.split('_');
+            const row = parseInt(parts[parts.length - 2]);
+            const col = parseInt(parts[parts.length - 1]);
+            
+            const game = checkersGames.get(inlineMessageId);
+            
+            if (!game) {
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра не найдена или истекла' }); } catch(e) {}
+                return;
+            }
+            
+            const userName = getUserDisplayName(user);
+            
+            // Ожидание второго игрока
+            if (game.status === 'waiting') {
+                if (user.id === game.playerWhite.id) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Ожидайте соперника!' }); } catch(e) {}
+                    return;
+                }
+                
+                game.playerBlack = user;
+                game.playerBlackName = userName;
+                game.status = 'playing';
+                
+                // Рандомно определяем кто ходит первым
+                const whiteFirst = Math.random() < 0.5;
+                game.currentTurn = whiteFirst ? 'white' : 'black';
+                const firstPlayerName = whiteFirst ? game.playerWhiteName : game.playerBlackName;
+                const firstSymbol = whiteFirst ? '⚪' : '⚫';
+                
+                try {
+                    await bot.editMessageText(
+                        `${EMOJI.joystick} <b>Шашки</b>\n\n${game.playerWhiteName} (⚪) vs ${game.playerBlackName} (⚫)\n\nПервый ход: ${firstPlayerName} (${firstSymbol})`,
+                        {
+                            inline_message_id: inlineMessageId,
+                            parse_mode: 'HTML',
+                            reply_markup: getCheckersKeyboard(game.board, game.gameId)
+                        }
+                    );
+                    await bot.answerCallbackQuery(callbackQuery.id, { text: `Игра началась! Ход ${firstPlayerName}` });
+                } catch (e) {
+                    console.error('Edit error:', e.message);
+                }
+                return;
+            }
+            
+            // Игра идёт
+            if (game.status === 'playing') {
+                const isWhite = user.id === game.playerWhite.id;
+                const isBlack = user.id === game.playerBlack?.id;
+                
+                if (!isWhite && !isBlack) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Вы не участвуете в этой игре!' }); } catch(e) {}
+                    return;
+                }
+                
+                const playerColor = isWhite ? 'white' : 'black';
+                
+                if (game.currentTurn !== playerColor) {
+                    try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Сейчас не ваш ход!' }); } catch(e) {}
+                    return;
+                }
+                
+                const cell = game.board[row][col];
+                
+                // Если есть выбранная шашка
+                if (game.selected) {
+                    const { moves, captures } = getValidMoves(game.board, game.selected.r, game.selected.c, playerColor);
+                    const mustCapture = hasAnyCaptures(game.board, playerColor);
+                    
+                    // Клик на свою шашку - меняем выбор
+                    if (cell.type === 'piece' && cell.color === playerColor) {
+                        game.selected = { r: row, c: col };
+                        try {
+                            await bot.editMessageReplyMarkup(getCheckersKeyboard(game.board, game.gameId, game.selected), {
+                                inline_message_id: inlineMessageId
+                            });
+                            await bot.answerCallbackQuery(callbackQuery.id);
+                        } catch (e) {}
+                        return;
+                    }
+                    
+                    // Проверяем ход
+                    const capture = captures.find(c => c.r === row && c.c === col);
+                    const move = moves.find(m => m.r === row && m.c === col);
+                    
+                    if (mustCapture && !capture) {
+                        try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Нужно бить!' }); } catch(e) {}
+                        return;
+                    }
+                    
+                    if (capture) {
+                        // Выполняем взятие
+                        const piece = game.board[game.selected.r][game.selected.c];
+                        game.board[row][col] = piece;
+                        game.board[game.selected.r][game.selected.c] = { type: 'dark' };
+                        game.board[capture.capturedR][capture.capturedC] = { type: 'dark' };
+                        
+                        // Проверяем превращение в дамку
+                        if ((playerColor === 'white' && row === 0) || (playerColor === 'black' && row === 7)) {
+                            game.board[row][col].isKing = true;
+                        }
+                        
+                        // Проверяем можно ли бить ещё
+                        const { captures: moreCaps } = getValidMoves(game.board, row, col, playerColor);
+                        if (moreCaps.length > 0) {
+                            game.selected = { r: row, c: col };
+                            try {
+                                await bot.editMessageReplyMarkup(getCheckersKeyboard(game.board, game.gameId, game.selected), {
+                                    inline_message_id: inlineMessageId
+                                });
+                                await bot.answerCallbackQuery(callbackQuery.id, { text: 'Бей ещё!' });
+                            } catch (e) {}
+                            return;
+                        }
+                    } else if (move && !mustCapture) {
+                        // Обычный ход
+                        const piece = game.board[game.selected.r][game.selected.c];
+                        game.board[row][col] = piece;
+                        game.board[game.selected.r][game.selected.c] = { type: 'dark' };
+                        
+                        // Проверяем превращение в дамку
+                        if ((playerColor === 'white' && row === 0) || (playerColor === 'black' && row === 7)) {
+                            game.board[row][col].isKing = true;
+                        }
+                    } else {
+                        try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Нельзя туда ходить!' }); } catch(e) {}
+                        return;
+                    }
+                    
+                    game.selected = null;
+                    
+                    // Меняем ход
+                    const opponentColor = playerColor === 'white' ? 'black' : 'white';
+                    
+                    // Проверяем победу
+                    const opponentPieces = countPieces(game.board, opponentColor);
+                    const opponentCanMove = hasAnyMoves(game.board, opponentColor);
+                    
+                    if (opponentPieces === 0 || !opponentCanMove) {
+                        game.status = 'finished';
+                        const winnerName = playerColor === 'white' ? game.playerWhiteName : game.playerBlackName;
+                        const winnerSymbol = playerColor === 'white' ? '⚪' : '⚫';
+                        
+                        // Обновляем статистику обоих игроков
+                        await incrementCheckersGames(game.playerWhite.id);
+                        await incrementCheckersGames(game.playerBlack.id);
+                        
+                        try {
+                            await bot.editMessageText(
+                                `${EMOJI.joystick} <b>Шашки</b>\n\n${game.playerWhiteName} (⚪) vs ${game.playerBlackName} (⚫)\n\n${EMOJI.trophy} <b>${winnerName}</b> победил! ${winnerSymbol}`,
+                                {
+                                    inline_message_id: inlineMessageId,
+                                    parse_mode: 'HTML',
+                                    reply_markup: getCheckersKeyboard(game.board, game.gameId)
+                                }
+                            );
+                            await bot.answerCallbackQuery(callbackQuery.id, { text: 'Победа!' });
+                        } catch (e) {}
+                        
+                        checkersGames.delete(inlineMessageId);
+                        return;
+                    }
+                    
+                    game.currentTurn = opponentColor;
+                    const nextName = opponentColor === 'white' ? game.playerWhiteName : game.playerBlackName;
+                    const nextSymbol = opponentColor === 'white' ? '⚪' : '⚫';
+                    
+                    try {
+                        await bot.editMessageText(
+                            `${EMOJI.joystick} <b>Шашки</b>\n\n${game.playerWhiteName} (⚪) vs ${game.playerBlackName} (⚫)\n\nХод: ${nextName} (${nextSymbol})`,
+                            {
+                                inline_message_id: inlineMessageId,
+                                parse_mode: 'HTML',
+                                reply_markup: getCheckersKeyboard(game.board, game.gameId)
+                            }
+                        );
+                        await bot.answerCallbackQuery(callbackQuery.id);
+                    } catch (e) {}
+                    return;
+                } else {
+                    // Выбираем шашку
+                    if (cell.type === 'piece' && cell.color === playerColor) {
+                        const { moves, captures } = getValidMoves(game.board, row, col, playerColor);
+                        if (moves.length === 0 && captures.length === 0) {
+                            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Эта шашка не может ходить!' }); } catch(e) {}
+                            return;
+                        }
+                        
+                        // Проверяем обязательное взятие
+                        const mustCapture = hasAnyCaptures(game.board, playerColor);
+                        if (mustCapture && captures.length === 0) {
+                            try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Выберите шашку которая может бить!' }); } catch(e) {}
+                            return;
+                        }
+                        
+                        game.selected = { r: row, c: col };
+                        try {
+                            await bot.editMessageReplyMarkup(getCheckersKeyboard(game.board, game.gameId, game.selected), {
+                                inline_message_id: inlineMessageId
+                            });
+                            await bot.answerCallbackQuery(callbackQuery.id, { text: 'Выберите куда ходить' });
+                        } catch (e) {}
+                    } else {
+                        try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Выберите свою шашку!' }); } catch(e) {}
+                    }
+                    return;
+                }
+            }
+            
+            if (game.status === 'finished') {
+                try { await bot.answerCallbackQuery(callbackQuery.id, { text: 'Игра уже завершена!' }); } catch(e) {}
+                return;
+            }
         }
         
         try { await bot.answerCallbackQuery(callbackQuery.id); } catch(e) {}
@@ -1091,7 +1516,9 @@ if (BOT_TOKEN) {
             `Играйте в крутые игры и соревнуйтесь с друзьями!\n\n` +
             `${EMOJI.play} <b>Открыть игры:</b> нажмите кнопку ниже\n` +
             `${EMOJI.chart} <b>Топы:</b> @spark_beta_bot [игра]\n` +
-            `${EMOJI.joystick} <b>Крестики-нолики:</b> @spark_beta_bot крестики`,
+            `${EMOJI.joystick} <b>Игры в чате:</b>\n` +
+            `• @spark_beta_bot крестики\n` +
+            `• @spark_beta_bot шашки`,
             { 
                 parse_mode: 'HTML',
                 reply_markup: {
