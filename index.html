@@ -35,6 +35,7 @@
             --safe-top: env(safe-area-inset-top, 0px);
             --safe-bottom: env(safe-area-inset-bottom, 0px);
             --pattern-opacity: 0.06;
+            --sheet-bg: #f2f2f7;
         }
         [data-theme="dark"] { 
             --bg-color: #000000; 
@@ -54,7 +55,8 @@
             --sudoku-sel: rgba(10, 132, 255, 0.4); 
             --sudoku-same: rgba(10, 132, 255, 0.25); 
             --sudoku-err: rgba(255, 69, 58, 0.3);
-            --pattern-opacity: 0.10; 
+            --pattern-opacity: 0.10;
+            --sheet-bg: #2c2c2e;
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
@@ -373,7 +375,7 @@
         .settings-footer-btn {
             flex: 1;
             padding: 16px;
-            border-radius: 14px;
+            border-radius: 26px;
             font-size: 16px;
             font-weight: 600;
             border: none;
@@ -598,13 +600,13 @@
         .bottom-sheet {
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            background: var(--bg-color);
+            background: var(--sheet-bg);
             border-radius: 20px 20px 0 0;
-            padding: 20px 20px calc(20px + var(--safe-bottom));
+            padding: 10px 20px calc(20px + var(--safe-bottom));
             transform: translateY(100%);
             transition: transform 0.3s ease;
             z-index: 23001;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
         }
         .bottom-sheet-overlay.visible .bottom-sheet {
@@ -612,17 +614,20 @@
         }
         .bottom-sheet-handle {
             width: 40px;
-            height: 4px;
-            background: #8e8e93;
-            border-radius: 2px;
-            margin: 0 auto 20px;
-            opacity: 0.5;
+            height: 5px;
+            background: rgba(128,128,128,0.6);
+            border-radius: 3px;
+            margin: 0 auto 15px;
+            cursor: grab;
+        }
+        .bottom-sheet-handle:active {
+            cursor: grabbing;
         }
         .bottom-sheet-title {
-            font-size: 22px;
+            font-size: 28px;
             font-weight: 700;
-            text-align: center;
-            margin-bottom: 25px;
+            text-align: left;
+            margin-bottom: 20px;
         }
         .condition-item {
             display: flex;
@@ -1176,7 +1181,7 @@
         
         <div class="card" onclick="openLeaderboardDetail('bb')">
             <div class="game-icon-box" style="background: linear-gradient(135deg, #34c759, #30b0c7);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="2"></rect><rect x="13" y="2" width="9" height="9" rx="2"></rect><rect x="2" y="13" width="9" height="9" rx="2"></rect></svg> </div>
-            <div style="flex:1;"><h3 style="margin:0; font-size:17px;">Топы Block Blast</h3></div>
+            <div style="flex:1;"><h3 style="margin:0; font-size:17px;" id="bbLbTitle" data-i18n="blockBlast">Блок Бласт</h3></div>
             <div style="color:#8e8e93;"><svg class="icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
         </div>
 
@@ -1254,10 +1259,10 @@
     <div id="view-games" class="screen active"> 
         <div class="header"> <div class="app-title">Игры</div> </div> 
         
-        <div class="card" onclick="openGameModal('saper')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #007aff, #5ac8fa);"> <svg viewBox="0 0 24 24" fill="currentColor" style="width:26px;height:26px;"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 7a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"/></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;">Сапёр</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
-        <div class="card" onclick="openGameModal('checkers')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #ff3b30, #ff9500);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;">Шашки</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
-        <div class="card" onclick="startBlockBlastCheck()"> <div class="game-icon-box" style="background: linear-gradient(135deg, #34c759, #30b0c7);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="2"></rect><rect x="13" y="2" width="9" height="9" rx="2"></rect><rect x="2" y="13" width="9" height="9" rx="2"></rect></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;">Block Blast</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
-        <div class="card" onclick="startSudokuCheck()"> <div class="game-icon-box" style="background: linear-gradient(135deg, #5856d6, #af52de);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;">Судоку</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
+        <div class="card" onclick="openGameModal('saper')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #007aff, #5ac8fa);"> <svg viewBox="0 0 24 24" fill="currentColor" style="width:26px;height:26px;"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 7a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"/></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="minesweeper">Сапёр</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
+        <div class="card" onclick="openGameModal('checkers')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #ff3b30, #ff9500);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="checkers">Шашки</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
+        <div class="card" onclick="startBlockBlastCheck()"> <div class="game-icon-box" style="background: linear-gradient(135deg, #34c759, #30b0c7);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="9" height="9" rx="2"></rect><rect x="13" y="2" width="9" height="9" rx="2"></rect><rect x="2" y="13" width="9" height="9" rx="2"></rect></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="blockBlast">Блок Бласт</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
+        <div class="card" onclick="startSudokuCheck()"> <div class="game-icon-box" style="background: linear-gradient(135deg, #5856d6, #af52de);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="sudoku">Судоку</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
         <div class="card" onclick="openGameModal('tower')">
             <div class="game-icon-box" style="background: linear-gradient(135deg, #FF2D55, #FF375F);">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -1267,7 +1272,7 @@
                 </svg>
             </div>
             <div style="flex:1;">
-                <h3 style="margin:0; font-size:17px;">Башня</h3>
+                <h3 style="margin:0; font-size:17px;" data-i18n="tower">Башня</h3>
             </div>
             <div style="color:var(--accent); font-weight:600;">Play</div>
         </div>
@@ -1282,7 +1287,7 @@
                 </svg>
             </div>
             <div style="flex:1;">
-                <h3 style="margin:0; font-size:17px;">Вордли</h3>
+                <h3 style="margin:0; font-size:17px;" data-i18n="wordle">Вордли</h3>
             </div>
             <div style="color:var(--accent); font-weight:600;">Play</div>
         </div>
@@ -1290,7 +1295,7 @@
 
     <div id="view-profile" class="screen"> 
         <div class="header">
-            <div class="app-title">Профиль</div>
+            <div class="app-title" data-i18n="profile">Профиль</div>
             <button class="settings-btn" onclick="openSettingsSheet()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
                     <line x1="4" y1="8" x2="20" y2="8"></line>
@@ -1304,35 +1309,35 @@
             <p id="user-id" style="color:#8e8e93; margin:5px 0 20px;">@username</p> 
 
             <div class="records-section">
-                <div class="records-title">Мои рекорды</div>
+                <div class="records-title" data-i18n="myRecords">Мои рекорды</div>
                 <div class="records-table" id="recordsTable">
                     <div class="record-row">
-                        <div class="record-game">Block Blast</div>
+                        <div class="record-game" data-i18n="blockBlast">Блок Бласт</div>
                         <div class="record-score" id="rec-bb">--</div>
                         <div class="record-rank" id="rank-bb">--</div>
                     </div>
                     <div class="record-row">
-                        <div class="record-game">Сапёр</div>
+                        <div class="record-game" data-i18n="minesweeper">Сапёр</div>
                         <div class="record-score" id="rec-saper">--</div>
                         <div class="record-rank" id="rank-saper">--</div>
                     </div>
                     <div class="record-row">
-                        <div class="record-game">Башня</div>
+                        <div class="record-game" data-i18n="tower">Башня</div>
                         <div class="record-score" id="rec-tower">--</div>
                         <div class="record-rank" id="rank-tower">--</div>
                     </div>
                     <div class="record-row">
-                        <div class="record-game">Судоку</div>
+                        <div class="record-game" data-i18n="sudoku">Судоку</div>
                         <div class="record-score" id="rec-sudoku">--</div>
                         <div class="record-rank" id="rank-sudoku">--</div>
                     </div>
                     <div class="record-row">
-                        <div class="record-game">Шашки</div>
+                        <div class="record-game" data-i18n="checkers">Шашки</div>
                         <div class="record-score" id="rec-checkers">--</div>
                         <div class="record-rank" id="rank-checkers">--</div>
                     </div>
                     <div class="record-row">
-                        <div class="record-game">Вордли</div>
+                        <div class="record-game" data-i18n="wordle">Вордли</div>
                         <div class="record-score" id="rec-wordle">--</div>
                         <div class="record-rank" id="rank-wordle">--</div>
                     </div>
@@ -1378,20 +1383,20 @@
                 <rect x="9.5" y="4" width="5" height="16" rx="1.5"/>
                 <rect x="16" y="7" width="5" height="13" rx="1.5"/>
             </svg>
-            Топы
+            <span data-i18n="tops">Топы</span>
         </div>
         <div class="tab-item active" onclick="switchTab('games', this)">
             <svg viewBox="0 0 22 17" fill="currentColor" stroke="none">
                 <path opacity="0.5" d="M9.38934 1.2285L8.8455 0.843917C8.06944 0.294707 7.14208 -0.000156492 6.19134 6.2308e-08H5.52834C5.08959 6.2308e-08 4.64759 0.0270832 4.23484 0.173333C1.65325 1.08983 -0.122329 4.43625 0.00658806 12.0283C0.0325881 13.5579 0.390088 15.2479 1.77025 15.9077C2.24106 16.134 2.75694 16.2511 3.27934 16.25C3.8665 16.2596 4.44333 16.0949 4.93684 15.7766C5.381 15.4863 5.771 15.1093 6.161 14.7323C6.642 14.2664 7.123 13.8006 7.70367 13.4994C8.33622 13.1711 9.03849 12.9998 9.75117 13H11.9168C12.6296 13 13.3316 13.1712 13.9643 13.4983C14.5449 13.8006 15.0259 14.2664 15.508 14.7323C15.898 15.1093 16.288 15.4863 16.73 15.7766C17.1525 16.0539 17.6996 16.25 18.3886 16.25C18.911 16.2511 19.4269 16.134 19.8977 15.9077C21.2778 15.2479 21.6353 13.5568 21.6613 12.0283C21.7903 4.43625 20.0147 1.08983 17.4331 0.174416C17.0193 0.0270831 16.5751 6.2308e-08 16.1385 6.2308e-08H15.4755C14.5246 0.000160243 13.5973 0.295406 12.8213 0.845L12.2775 1.2285C11.8551 1.52695 11.3506 1.6872 10.8334 1.6872C10.3162 1.6872 9.81173 1.52695 9.38934 1.2285Z"/>
                 <path d="M15.9798 4.3335C16.1953 4.3335 16.402 4.4191 16.5543 4.57147C16.7067 4.72385 16.7923 4.93051 16.7923 5.146C16.7923 5.36148 16.7067 5.56815 16.5543 5.72052C16.402 5.87289 16.1953 5.9585 15.9798 5.9585C15.7643 5.9585 15.5577 5.87289 15.4053 5.72052C15.2529 5.56815 15.1673 5.36148 15.1673 5.146C15.1673 4.93051 15.2529 4.72385 15.4053 4.57147C15.5577 4.4191 15.7643 4.3335 15.9798 4.3335ZM5.95898 4.60433C6.17447 4.60433 6.38113 4.68993 6.53351 4.84231C6.68588 4.99468 6.77148 5.20134 6.77148 5.41683V6.22933H7.58398C7.79947 6.22933 8.00613 6.31493 8.15851 6.46731C8.31088 6.61968 8.39648 6.82634 8.39648 7.04183C8.39648 7.25732 8.31088 7.46398 8.15851 7.61635C8.00613 7.76873 7.79947 7.85433 7.58398 7.85433H6.77148V8.66683C6.77148 8.88232 6.68588 9.08898 6.53351 9.24135C6.38113 9.39373 6.17447 9.47933 5.95898 9.47933C5.7435 9.47933 5.53683 9.39373 5.38446 9.24135C5.23209 9.08898 5.14648 8.88232 5.14648 8.66683V7.85433H4.33398C4.1185 7.85433 3.91183 7.76873 3.75946 7.61635C3.60709 7.46398 3.52148 7.25732 3.52148 7.04183C3.52148 6.82634 3.60709 6.61968 3.75946 6.46731C3.91183 6.31493 4.1185 6.22933 4.33398 6.22933H5.14648V5.41683C5.14648 5.20134 5.23209 4.99468 5.38446 4.84231C5.53683 4.68993 5.7435 4.60433 5.95898 4.60433ZM18.4173 6.771C18.4173 6.98648 18.3317 7.19315 18.1793 7.34552C18.027 7.49789 17.8203 7.5835 17.6048 7.5835C17.3893 7.5835 17.1827 7.49789 17.0303 7.34552C16.8779 7.19315 16.7923 6.98648 16.7923 6.771C16.7923 6.55551 16.8779 6.34885 17.0303 6.19647C17.1827 6.0441 17.3893 5.9585 17.6048 5.9585C17.8203 5.9585 18.027 6.0441 18.1793 6.19647C18.3317 6.34885 18.4173 6.55551 18.4173 6.771ZM14.3548 7.5835C14.5703 7.5835 14.777 7.49789 14.9293 7.34552C15.0817 7.19315 15.1673 6.98648 15.1673 6.771C15.1673 6.55551 15.0817 6.34885 14.9293 6.19647C14.777 6.0441 14.5703 5.9585 14.3548 5.9585C14.1393 5.9585 13.9327 6.0441 13.7803 6.19647C13.6279 6.34885 13.5423 6.55551 13.5423 6.771C13.5423 6.98648 13.6279 7.19315 13.7803 7.34552C13.9327 7.49789 14.1393 7.5835 14.3548 7.5835ZM16.7923 8.396C16.7923 8.18051 16.7067 7.97385 16.5543 7.82147C16.402 7.6691 16.1953 7.5835 15.9798 7.5835C15.7643 7.5835 15.5577 7.6691 15.4053 7.82147C15.2529 7.97385 15.1673 8.18051 15.1673 8.396C15.1673 8.61148 15.2529 8.81815 15.4053 8.97052C15.5577 9.12289 15.7643 9.2085 15.9798 9.2085C16.1953 9.2085 16.402 9.12289 16.5543 8.97052C16.7067 8.81815 16.7923 8.61148 16.7923 8.396Z"/>
             </svg>
-            Игры
+            <span data-i18n="games">Игры</span>
         </div> 
         <div class="tab-item" onclick="switchTab('profile', this)">
             <svg viewBox="0 0 18 24" fill="currentColor" stroke="none">
                 <path d="M14.5363 13.9197C15.4862 14.0154 16.3661 14.4535 17.0059 15.1494C17.6457 15.8454 18 16.7496 18 17.6872C18 19.6341 16.7914 21.2451 15.1663 22.3082C13.5334 23.3788 11.3477 24 9 24C6.65229 24 4.46657 23.3788 2.83371 22.3082C1.206 21.2476 0 19.6341 0 17.6872C0 16.6827 0.406389 15.7191 1.12973 15.0088C1.85307 14.2985 2.83418 13.8995 3.85714 13.8995H14.1429L14.5363 13.9197ZM9.00514 0.00120841C9.77606 -0.0143968 10.5423 0.121278 11.2593 0.400254C11.9759 0.679254 12.6291 1.09595 13.1796 1.62592C13.7304 2.15592 14.1678 2.78851 14.4663 3.48666C14.7649 4.18481 14.9184 4.93444 14.9181 5.69162C14.9176 6.44888 14.7633 7.19834 14.4643 7.89628C14.1652 8.59397 13.7271 9.22627 13.176 9.75578C12.6247 10.2853 11.9715 10.7014 11.2544 10.9797C10.5375 11.2582 9.77091 11.3931 9 11.3769C7.48497 11.3456 6.04273 10.7325 4.98255 9.66917C3.92235 8.6061 3.32861 7.17713 3.32861 5.68905C3.32861 4.20097 3.92235 2.77213 4.98255 1.70885C6.04273 0.645594 7.48497 0.0325704 9 0.00120841"/>
             </svg>
-            Профиль
+            <span data-i18n="profile">Профиль</span>
         </div> 
     </div>
 
@@ -1491,7 +1496,7 @@
     
     <div class="modal-overlay" id="modalWaitOpponent"><div class="modal"><h2>Ожидание...</h2><p style="color:#8e8e93;">Код комнаты:</p><div style="font-size:32px; font-weight:800; letter-spacing:5px; margin:10px 0; color:var(--accent);" id="displayRoomCode">-----</div><p style="font-size:14px; color:#8e8e93;">Передай этот код другу</p><button style="margin-top:10px; background:none; border:none; color:#ff3b30; font-size:16px;" onclick="cancelOnlineWait()">Отмена</button></div></div>
     
-    <div class="modal-overlay" id="modalBBResume"><div class="modal"><h2>Block Blast</h2><p style="color:#8e8e93;">Найдена незаконченная игра</p><button class="btn-main" onclick="resumeBB()">Продолжить</button><button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="newGameBB()">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalBBResume').classList.remove('visible')">Отмена</button></div></div>
+    <div class="modal-overlay" id="modalBBResume"><div class="modal"><h2 data-i18n="blockBlast">Блок Бласт</h2><p style="color:#8e8e93;" data-i18n="foundUnfinished">Найдена незаконченная игра</p><button class="btn-main" onclick="resumeBB()" data-i18n="continue">Продолжить</button><button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="newGameBB()" data-i18n="newGame">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalBBResume').classList.remove('visible')" data-i18n="cancel">Отмена</button></div></div>
     <div class="modal-overlay" id="modalResult"><div class="modal" id="modalResultContent"><h2 id="resTitle">Победа!</h2><p id="resText">Текст</p><button class="btn-main" id="resBtn" onclick="closeResult()">Закрыть</button></div></div>
     <div class="modal-overlay" id="modalBBGameOver"><div class="modal" id="bbGameOverContent"></div></div>
     <div class="modal-overlay" id="modalConfirmExit"><div class="modal"><h2>Выйти из игры?</h2><p style="color:#8e8e93; margin-bottom:20px;">Вы уверены, что хотите выйти? Игра будет засчитана как поражение.</p><button class="btn-main" onclick="confirmExit(true)">Да, выйти</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px; width:100%; padding:10px;" onclick="confirmExit(false)">Отмена</button></div></div>
@@ -1942,15 +1947,61 @@
             if(vibrationEnabled) tg.HapticFeedback.selectionChanged();
         }
         
-        // Settings Sheet
+        // Settings Sheet with swipe to close
+        let sheetStartY = 0;
+        let sheetCurrentY = 0;
+        let sheetDragging = false;
+        
         function openSettingsSheet() {
-            document.getElementById('settingsSheet').classList.add('visible');
+            const overlay = document.getElementById('settingsSheet');
+            const sheet = overlay.querySelector('.bottom-sheet');
+            overlay.classList.add('visible');
+            sheet.style.transform = '';
             applyLiteMode();
             applyVibration();
             if(vibrationEnabled) tg.HapticFeedback.impactOccurred('light');
+            
+            // Add swipe listeners to handle
+            const handle = sheet.querySelector('.bottom-sheet-handle');
+            handle.addEventListener('touchstart', sheetTouchStart, { passive: true });
+            handle.addEventListener('touchmove', sheetTouchMove, { passive: false });
+            handle.addEventListener('touchend', sheetTouchEnd);
         }
+        
+        function sheetTouchStart(e) {
+            sheetDragging = true;
+            sheetStartY = e.touches[0].clientY;
+            const sheet = document.querySelector('#settingsSheet .bottom-sheet');
+            sheet.style.transition = 'none';
+        }
+        
+        function sheetTouchMove(e) {
+            if (!sheetDragging) return;
+            e.preventDefault();
+            sheetCurrentY = e.touches[0].clientY - sheetStartY;
+            if (sheetCurrentY < 0) sheetCurrentY = 0; // только вниз
+            const sheet = document.querySelector('#settingsSheet .bottom-sheet');
+            sheet.style.transform = `translateY(${sheetCurrentY}px)`;
+        }
+        
+        function sheetTouchEnd() {
+            sheetDragging = false;
+            const sheet = document.querySelector('#settingsSheet .bottom-sheet');
+            sheet.style.transition = 'transform 0.3s ease';
+            
+            if (sheetCurrentY > 100) {
+                closeSettingsSheet();
+            } else {
+                sheet.style.transform = 'translateY(0)';
+            }
+            sheetCurrentY = 0;
+        }
+        
         function closeSettingsSheet() {
-            document.getElementById('settingsSheet').classList.remove('visible');
+            const overlay = document.getElementById('settingsSheet');
+            const sheet = overlay.querySelector('.bottom-sheet');
+            sheet.style.transition = 'transform 0.3s ease';
+            overlay.classList.remove('visible');
         }
         
         // Language
@@ -1974,7 +2025,54 @@
                 conditions: 'Условия',
                 invite: 'Пригласить',
                 invited: 'Приглашено',
-                rankInTop: 'Место в топе'
+                rankInTop: 'Место в топе',
+                // Games
+                blockBlast: 'Блок Бласт',
+                minesweeper: 'Сапёр',
+                tower: 'Башня',
+                sudoku: 'Судоку',
+                checkers: 'Шашки',
+                wordle: 'Вордли',
+                referrals: 'Рефералы',
+                // Game UI
+                menu: 'Меню',
+                newGame: 'Новая игра',
+                playAgain: 'Играть снова',
+                exit: 'Выйти',
+                score: 'Счёт',
+                best: 'Лучший',
+                wins: 'Побед',
+                time: 'Время',
+                // Messages
+                newRecord: 'Новый Рекорд!',
+                recordNotBeat: 'Рекорд не побит',
+                tryAgain: 'Попробуйте еще раз!',
+                victory: 'Победа!',
+                defeat: 'Поражение',
+                draw: 'Ничья',
+                // Minesweeper
+                dig: 'Копать',
+                flag: 'Флаг',
+                // Checkers
+                yourTurn: 'Ваш ход',
+                opponentTurn: 'Ход соперника',
+                white: 'Белые',
+                black: 'Чёрные',
+                // Leaderboard
+                place: 'место',
+                points: 'очков',
+                gamesPlayed: 'игр',
+                // Modal
+                foundUnfinished: 'Найдена незаконченная игра',
+                continue: 'Продолжить',
+                cancel: 'Отмена',
+                topsBlockBlast: 'Топы Блок Бласт',
+                topsMinesweeper: 'Топы Сапёр',
+                topsTower: 'Топы Башня',
+                topsSudoku: 'Топы Судоку',
+                topsCheckers: 'Топы Шашки',
+                topsWordle: 'Топы Вордли',
+                topsReferrals: 'Топы Рефералы'
             },
             en: {
                 settings: 'Settings',
@@ -1994,7 +2092,54 @@
                 conditions: 'Terms',
                 invite: 'Invite',
                 invited: 'Invited',
-                rankInTop: 'Rank in top'
+                rankInTop: 'Rank in top',
+                // Games
+                blockBlast: 'Block Blast',
+                minesweeper: 'Minesweeper',
+                tower: 'Tower',
+                sudoku: 'Sudoku',
+                checkers: 'Checkers',
+                wordle: 'Wordle',
+                referrals: 'Referrals',
+                // Game UI
+                menu: 'Menu',
+                newGame: 'New Game',
+                playAgain: 'Play Again',
+                exit: 'Exit',
+                score: 'Score',
+                best: 'Best',
+                wins: 'Wins',
+                time: 'Time',
+                // Messages
+                newRecord: 'New Record!',
+                recordNotBeat: 'Record not beaten',
+                tryAgain: 'Try again!',
+                victory: 'Victory!',
+                defeat: 'Defeat',
+                draw: 'Draw',
+                // Minesweeper
+                dig: 'Dig',
+                flag: 'Flag',
+                // Checkers
+                yourTurn: 'Your turn',
+                opponentTurn: 'Opponent\'s turn',
+                white: 'White',
+                black: 'Black',
+                // Leaderboard
+                place: 'place',
+                points: 'pts',
+                gamesPlayed: 'games',
+                // Modal
+                foundUnfinished: 'Unfinished game found',
+                continue: 'Continue',
+                cancel: 'Cancel',
+                topsBlockBlast: 'Block Blast Leaderboard',
+                topsMinesweeper: 'Minesweeper Leaderboard',
+                topsTower: 'Tower Leaderboard',
+                topsSudoku: 'Sudoku Leaderboard',
+                topsCheckers: 'Checkers Leaderboard',
+                topsWordle: 'Wordle Leaderboard',
+                topsReferrals: 'Referrals Leaderboard'
             }
         };
         
@@ -2383,14 +2528,15 @@
         function openLeaderboardDetail(game) {
             currentLbGame = game;
             const selectorWrapper = document.querySelector('.lb-selector-wrapper');
+            const t = translations[currentLang] || translations.ru;
             
-            if(game === 'saper') { document.getElementById('lbGameTitle').innerText = 'Топы Сапёра'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(SAPER_CATS[0]); } 
-            else if (game === 'checkers') { document.getElementById('lbGameTitle').innerText = 'Топы Шашек'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(CHECKERS_CATS[0]); } 
-            else if (game === 'bb') { document.getElementById('lbGameTitle').innerText = 'Топы Block Blast'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(BB_CATS[0]); } 
-            else if (game === 'sudoku') { document.getElementById('lbGameTitle').innerText = 'Топы Судоку'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(SUDOKU_CATS[0]); }
-            else if (game === 'tower') { document.getElementById('lbGameTitle').innerText = 'Топы Башни'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(TOWER_CATS[0]); }
-            else if (game === 'wordle') { document.getElementById('lbGameTitle').innerText = 'Топы Вордли'; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(WORDLE_CATS[0]); }
-            else if (game === 'referral') { document.getElementById('lbGameTitle').innerText = 'Топ рефералов'; if(selectorWrapper) selectorWrapper.style.display = 'none'; loadReferralLeaderboard(); }
+            if(game === 'saper') { document.getElementById('lbGameTitle').innerText = t.minesweeper; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(SAPER_CATS[0]); } 
+            else if (game === 'checkers') { document.getElementById('lbGameTitle').innerText = t.checkers; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(CHECKERS_CATS[0]); } 
+            else if (game === 'bb') { document.getElementById('lbGameTitle').innerText = t.blockBlast; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(BB_CATS[0]); } 
+            else if (game === 'sudoku') { document.getElementById('lbGameTitle').innerText = t.sudoku; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(SUDOKU_CATS[0]); }
+            else if (game === 'tower') { document.getElementById('lbGameTitle').innerText = t.tower; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(TOWER_CATS[0]); }
+            else if (game === 'wordle') { document.getElementById('lbGameTitle').innerText = t.wordle; if(selectorWrapper) selectorWrapper.style.display = ''; loadLeaderboardData(WORDLE_CATS[0]); }
+            else if (game === 'referral') { document.getElementById('lbGameTitle').innerText = t.referrals; if(selectorWrapper) selectorWrapper.style.display = 'none'; loadReferralLeaderboard(); }
             document.getElementById('view-leaderboard-detail').classList.add('active');
         }
         function closeLeaderboardDetail() { document.getElementById('view-leaderboard-detail').classList.remove('active'); document.getElementById('lbStickyUser').classList.remove('visible'); const menu = document.getElementById('dropdownMenu'); menu.classList.remove('active'); document.getElementById('dropdownCatcher').classList.remove('active'); document.getElementById('lbSelector').classList.remove('open'); }
