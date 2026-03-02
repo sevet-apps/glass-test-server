@@ -1233,7 +1233,7 @@
 
     <div id="view-leaderboard-detail" class="screen" style="z-index: 200; background: var(--bg-color);">
         <div class="header">
-            <div class="back-btn" onclick="closeLeaderboardDetail()" style="font-size: 17px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Назад</div>
+            <div class="back-btn" onclick="closeLeaderboardDetail()" style="font-size: 17px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="back">Назад</span></div>
         </div>
         
         <div class="lb-title-lg" id="lbGameTitle">Title</div>
@@ -1349,11 +1349,11 @@
                 <div class="records-title">Реферальная программа</div>
                 <div class="referral-card">
                     <div class="referral-header">
-                        <div class="referral-title">Приглашайте друзей и поднимайтесь выше в топе</div>
-                        <button class="referral-conditions-btn" onclick="showReferralConditions()">Условия</button>
+                        <div class="referral-title" data-i18n="inviteFriends">Приглашайте друзей и поднимайтесь выше в топе</div>
+                        <button class="referral-conditions-btn" onclick="showReferralConditions()" data-i18n="conditions">Условия</button>
                     </div>
                     <div class="referral-buttons">
-                        <button class="referral-invite-btn" onclick="shareReferralLink()">Пригласить</button>
+                        <button class="referral-invite-btn" onclick="shareReferralLink()" data-i18n="invite">Пригласить</button>
                         <button class="referral-copy-btn" onclick="copyReferralLink()">
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1364,11 +1364,11 @@
                     <div class="referral-stats">
                         <div class="referral-stat-box">
                             <div class="referral-stat-value" id="referral-count">0</div>
-                            <div class="referral-stat-label">Приглашено</div>
+                            <div class="referral-stat-label" data-i18n="invited">Приглашено</div>
                         </div>
                         <div class="referral-stat-box">
                             <div class="referral-stat-value" id="referral-rank">--</div>
-                            <div class="referral-stat-label">Место в топе</div>
+                            <div class="referral-stat-label" data-i18n="rankInTop">Место в топе</div>
                         </div>
                     </div>
                 </div>
@@ -1405,7 +1405,7 @@
     <div id="saper-screen" class="game-overlay">
         <div id="bgPatternSaper" class="game-overlay-bg"></div>
         <div class="game-top-bar"> 
-            <div class="back-btn" onclick="closeGame('saper')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню</div> 
+            <div class="back-btn" onclick="closeGame('saper')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span></div> 
             <div style="display:flex; gap:15px; font-weight:600; font-size:18px;"> 
                 <span style="display:flex; align-items:center; gap:4px;"><span id="saperFlags">0</span> <svg class="saper-icon" viewBox="0 0 24 24" style="fill:#ff3b30; stroke:none;"><path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z"/></svg></span> 
                 <span style="display:flex; align-items:center; gap:4px;"><span id="saperTimer">000.00</span> <svg class="saper-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-color);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span> 
@@ -1415,15 +1415,15 @@
         <div class="bottom-controls">
             <div class="segment-control" style="margin: 0; min-width: 220px;">
                 <div class="segment-glider" id="saperGlider"></div>
-                <div class="segment-item active" onclick="setSaperMode('dig', this, 0)">Копать</div>
-                <div class="segment-item" onclick="setSaperMode('flag', this, 1)">Флаг</div>
+                <div class="segment-item active" onclick="setSaperMode('dig', this, 0)" data-i18n="dig">Копать</div>
+                <div class="segment-item" onclick="setSaperMode('flag', this, 1)" data-i18n="flag">Флаг</div>
             </div>
         </div> 
     </div>
     
     <div id="checkers-screen" class="game-overlay"> 
         <div class="game-top-bar"> 
-            <div class="back-btn" onclick="tryCloseCheckers()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню</div> 
+            <div class="back-btn" onclick="tryCloseCheckers()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span></div> 
             <div id="checkersTimer" style="font-weight:700; font-size:18px; color:var(--danger); display:none;">1:00</div>
             <div style="font-weight:700; font-size:18px;" id="checkersStatus">Ход Белых</div> 
         </div> 
@@ -1436,11 +1436,11 @@
             </div>
         </div> 
     </div>
-    <div id="bb-screen" class="game-overlay"> <div class="game-top-bar"> <div class="back-btn" onclick="closeGame('bb')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню</div> <div style="font-weight:700; font-size:18px;">Best: <span id="bbBestScore">0</span></div> </div> <div class="bb-game-container"> <div class="bb-score-box" id="bbScore">0</div> <div id="bbGrid" class="bb-grid"></div> <div class="bb-footer"> <div class="bb-shape-container" id="shape0"></div> <div class="bb-shape-container" id="shape1"></div> <div class="bb-shape-container" id="shape2"></div> </div> </div> </div>
+    <div id="bb-screen" class="game-overlay"> <div class="game-top-bar"> <div class="back-btn" onclick="closeGame('bb')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span></div> <div style="font-weight:700; font-size:18px;"><span data-i18n="best">Best</span>: <span id="bbBestScore">0</span></div> </div> <div class="bb-game-container"> <div class="bb-score-box" id="bbScore">0</div> <div id="bbGrid" class="bb-grid"></div> <div class="bb-footer"> <div class="bb-shape-container" id="shape0"></div> <div class="bb-shape-container" id="shape1"></div> <div class="bb-shape-container" id="shape2"></div> </div> </div> </div>
     
     <div id="sudoku-screen" class="game-overlay"> 
         <div class="game-top-bar"> 
-            <div class="back-btn" onclick="closeGame('sudoku')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню</div> 
+            <div class="back-btn" onclick="closeGame('sudoku')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span></div> 
             <div class="lives-box">Ошибки: <span id="sudokuLives">0/3</span></div>
         </div> 
         <div class="game-area" style="justify-content: flex-start; padding-top: 20px;">
@@ -1459,11 +1459,11 @@
         </div> 
     </div>
 
-    <div class="modal-overlay" id="modalSaper"><div class="modal"><h2>Сапёр</h2><div class="diff-grid"><div class="diff-btn" onclick="setSaperDiff(6,6,5,this)">6x6</div><div class="diff-btn selected" onclick="setSaperDiff(8,8,10,this)">8x8</div><div class="diff-btn" onclick="setSaperDiff(10,10,15,this)">10x10</div><div class="diff-btn" onclick="setSaperDiff(15,15,30,this)">15x15</div></div><button class="btn-main" onclick="launchSaper()">Начать</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSaper').classList.remove('visible')">Отмена</button></div></div>
+    <div class="modal-overlay" id="modalSaper"><div class="modal"><h2 data-i18n="minesweeper">Сапёр</h2><div class="diff-grid"><div class="diff-btn" onclick="setSaperDiff(6,6,5,this)">6x6</div><div class="diff-btn selected" onclick="setSaperDiff(8,8,10,this)">8x8</div><div class="diff-btn" onclick="setSaperDiff(10,10,15,this)">10x10</div><div class="diff-btn" onclick="setSaperDiff(15,15,30,this)">15x15</div></div><button class="btn-main" onclick="launchSaper()" data-i18n="start">Начать</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSaper').classList.remove('visible')" data-i18n="cancel">Отмена</button></div></div>
     
     <div class="modal-overlay" id="modalCheckers">
         <div class="modal">
-            <h2>Шашки</h2>
+            <h2 data-i18n="checkers">Шашки</h2>
             
             <div class="segment-control" style="margin-bottom: 15px;">
                 <div class="segment-glider" id="checkersMainGlider"></div>
@@ -1472,57 +1472,57 @@
             </div>
 
             <div id="ch-offline-panel" class="panel-visible">
-                <p style="color:#8e8e93; margin-bottom:15px; margin-top:0;">Выберите режим игры</p>
+                <p style="color:#8e8e93; margin-bottom:15px; margin-top:0;" data-i18n="chooseGameMode">Выберите режим игры</p>
                 <div class="segment-control">
                     <div class="segment-glider" id="checkersGlider"></div>
-                    <div class="segment-item active" onclick="setCheckersMode(false, this, 0)">2 Игрока</div>
-                    <div class="segment-item" onclick="setCheckersMode(true, this, 1)">С Роботом</div>
+                    <div class="segment-item active" onclick="setCheckersMode(false, this, 0)" data-i18n="twoPlayers">2 Игрока</div>
+                    <div class="segment-item" onclick="setCheckersMode(true, this, 1)" data-i18n="vsRobot">С Роботом</div>
                 </div>
-                <button class="btn-main" onclick="launchCheckers()">Играть</button>
+                <button class="btn-main" onclick="launchCheckers()" data-i18n="play">Играть</button>
             </div>
 
             <div id="ch-online-panel" class="panel-hidden">
-                <button class="btn-main" style="margin-top:0; margin-bottom:8px; background:linear-gradient(135deg, #007aff, #00c6ff); padding: 12px;" onclick="joinGame()">Найти соперника</button>
+                <button class="btn-main" style="margin-top:0; margin-bottom:8px; background:linear-gradient(135deg, #007aff, #00c6ff); padding: 12px;" onclick="joinGame()" data-i18n="findOpponent">Найти соперника</button>
                 <div class="input-group">
                     <input type="text" id="joinCodeInput" class="input-glass" placeholder="Код..." maxlength="5">
-                    <button class="btn-secondary" onclick="joinGameByCode()">Войти</button>
+                    <button class="btn-secondary" onclick="joinGameByCode()" data-i18n="join">Войти</button>
                 </div>
-                <button class="btn-secondary" style="width:100%; margin-top:8px; color:#8e8e93; padding: 10px;" onclick="createGame()">Создать комнату</button>
+                <button class="btn-secondary" style="width:100%; margin-top:8px; color:#8e8e93; padding: 10px;" onclick="createGame()" data-i18n="createRoom">Создать комнату</button>
             </div>
 
-            <button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalCheckers').classList.remove('visible')">Отмена</button>
+            <button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalCheckers').classList.remove('visible')" data-i18n="cancel">Отмена</button>
         </div>
     </div>
     
-    <div class="modal-overlay" id="modalWaitOpponent"><div class="modal"><h2>Ожидание...</h2><p style="color:#8e8e93;">Код комнаты:</p><div style="font-size:32px; font-weight:800; letter-spacing:5px; margin:10px 0; color:var(--accent);" id="displayRoomCode">-----</div><p style="font-size:14px; color:#8e8e93;">Передай этот код другу</p><button style="margin-top:10px; background:none; border:none; color:#ff3b30; font-size:16px;" onclick="cancelOnlineWait()">Отмена</button></div></div>
+    <div class="modal-overlay" id="modalWaitOpponent"><div class="modal"><h2 data-i18n="waitingOpponent">Ожидание...</h2><p style="color:#8e8e93;" data-i18n="roomCode">Код комнаты:</p><div style="font-size:32px; font-weight:800; letter-spacing:5px; margin:10px 0; color:var(--accent);" id="displayRoomCode">-----</div><p style="font-size:14px; color:#8e8e93;" data-i18n="shareCode">Передай этот код другу</p><button style="margin-top:10px; background:none; border:none; color:#ff3b30; font-size:16px;" onclick="cancelOnlineWait()" data-i18n="cancel">Отмена</button></div></div>
     
     <div class="modal-overlay" id="modalBBResume"><div class="modal"><h2 data-i18n="blockBlast">Блок Бласт</h2><p style="color:#8e8e93;" data-i18n="foundUnfinished">Найдена незаконченная игра</p><button class="btn-main" onclick="resumeBB()" data-i18n="continue">Продолжить</button><button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="newGameBB()" data-i18n="newGame">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalBBResume').classList.remove('visible')" data-i18n="cancel">Отмена</button></div></div>
     <div class="modal-overlay" id="modalResult"><div class="modal" id="modalResultContent"><h2 id="resTitle">Победа!</h2><p id="resText">Текст</p><button class="btn-main" id="resBtn" onclick="closeResult()">Закрыть</button></div></div>
     <div class="modal-overlay" id="modalBBGameOver"><div class="modal" id="bbGameOverContent"></div></div>
-    <div class="modal-overlay" id="modalConfirmExit"><div class="modal"><h2>Выйти из игры?</h2><p style="color:#8e8e93; margin-bottom:20px;">Вы уверены, что хотите выйти? Игра будет засчитана как поражение.</p><button class="btn-main" onclick="confirmExit(true)">Да, выйти</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px; width:100%; padding:10px;" onclick="confirmExit(false)">Отмена</button></div></div>
+    <div class="modal-overlay" id="modalConfirmExit"><div class="modal"><h2 data-i18n="exitGame">Выйти из игры?</h2><p style="color:#8e8e93; margin-bottom:20px;" data-i18n="exitConfirm">Вы уверены, что хотите выйти? Игра будет засчитана как поражение.</p><button class="btn-main" onclick="confirmExit(true)" data-i18n="yesExit">Да, выйти</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px; width:100%; padding:10px;" onclick="confirmExit(false)" data-i18n="cancel">Отмена</button></div></div>
     
     <div class="modal-overlay" id="modalLoading"><div class="modal" style="display:flex; flex-direction:column; align-items:center;"><div class="loader"></div><h3>Создание комнаты...</h3></div></div>
 
-    <div class="modal-overlay" id="modalSudoku"><div class="modal"><h2>Судоку</h2><p style="color:#8e8e93; margin-bottom:20px;">Выберите сложность</p>
+    <div class="modal-overlay" id="modalSudoku"><div class="modal"><h2 data-i18n="sudoku">Судоку</h2><p style="color:#8e8e93; margin-bottom:20px;" data-i18n="chooseDifficulty">Выберите сложность</p>
         <div class="segment-control vertical" style="height: 180px;">
             <div class="segment-glider" id="sudokuGlider" style="transform: translateY(100%);"></div>
-            <div class="segment-item" onclick="selectSudokuDiff(30, this, 0)">Легко (+1)</div>
-            <div class="segment-item active" onclick="selectSudokuDiff(40, this, 1)">Средне (+2)</div>
-            <div class="segment-item" onclick="selectSudokuDiff(50, this, 2)">Сложно (+3)</div>
+            <div class="segment-item" onclick="selectSudokuDiff(30, this, 0)" data-i18n="easy">Легко (+1)</div>
+            <div class="segment-item active" onclick="selectSudokuDiff(40, this, 1)" data-i18n="medium">Средне (+2)</div>
+            <div class="segment-item" onclick="selectSudokuDiff(50, this, 2)" data-i18n="hard">Сложно (+3)</div>
         </div>
-        <button class="btn-main" onclick="startSudoku()">Играть</button>
-        <button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSudoku').classList.remove('visible')">Отмена</button>
+        <button class="btn-main" onclick="startSudoku()" data-i18n="start">Начать</button>
+        <button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSudoku').classList.remove('visible')" data-i18n="cancel">Отмена</button>
     </div></div>
     
-    <div class="modal-overlay" id="modalSudokuResume"><div class="modal"><h2>Судоку</h2><p style="color:#8e8e93;">Найдена незаконченная игра</p><button class="btn-main" onclick="resumeSudoku()">Продолжить</button><button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="document.getElementById('modalSudokuResume').classList.remove('visible'); document.getElementById('modalSudoku').classList.add('visible');">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSudokuResume').classList.remove('visible')">Отмена</button></div></div>
+    <div class="modal-overlay" id="modalSudokuResume"><div class="modal"><h2 data-i18n="sudoku">Судоку</h2><p style="color:#8e8e93;" data-i18n="foundUnfinished">Найдена незаконченная игра</p><button class="btn-main" onclick="resumeSudoku()" data-i18n="continue">Продолжить</button><button class="btn-main" style="background:var(--danger); margin-top:10px;" onclick="document.getElementById('modalSudokuResume').classList.remove('visible'); document.getElementById('modalSudoku').classList.add('visible');" data-i18n="newGame">Новая игра</button><button style="margin-top:10px; background:none; border:none; color:#8e8e93; font-size:16px;" onclick="document.getElementById('modalSudokuResume').classList.remove('visible')" data-i18n="cancel">Отмена</button></div></div>
 
     <div id="tower-screen" class="game-overlay">
         <div id="bgPatternTower" class="game-overlay-bg"></div>
         <div class="game-top-bar" id="towerTopBar">
             <div class="back-btn" onclick="tryCloseTower()">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span>
             </div>
-            <div style="font-weight:700; font-size:18px;">Best: <span id="towerBestScore">0</span></div>
+            <div style="font-weight:700; font-size:18px;"><span data-i18n="best">Best</span>: <span id="towerBestScore">0</span></div>
         </div>
         
         <div id="tower-game-background" style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(180deg, var(--bg-color) 0%, rgba(0,0,0,0.05) 100%); pointer-events:none; z-index:0;"></div>
@@ -1531,7 +1531,7 @@
         
         <div id="tower-ui-layer" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:2;">
             <div id="towerScore" style="position:absolute; top:12%; left:0; width:100%; text-align:center; font-size:80px; font-weight:800; color:var(--accent); text-shadow:0 4px 20px rgba(0,0,0,0.1); transition:transform 0.15s cubic-bezier(0.175,0.885,0.32,1.275), color 0.5s ease; pointer-events:none;">0</div>
-            <div id="towerStartMsg" style="position:absolute; bottom:15%; width:100%; text-align:center; font-size:17px; font-weight:600; color:var(--accent); opacity:0.8; animation:pulse 2s infinite; pointer-events:none;">Нажми, чтобы начать</div>
+            <div id="towerStartMsg" style="position:absolute; bottom:15%; width:100%; text-align:center; font-size:17px; font-weight:600; color:var(--accent); opacity:0.8; animation:pulse 2s infinite; pointer-events:none;" data-i18n="tapToStart">Нажми, чтобы начать</div>
         </div>
     </div>
 
@@ -1539,9 +1539,9 @@
         <div id="bgPatternWordle" class="game-overlay-bg"></div>
         <div class="game-top-bar">
             <div class="back-btn" onclick="closeGame('wordle')">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>Меню
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg><span data-i18n="menu">Меню</span>
             </div>
-            <div style="font-weight:700; font-size:18px;">Победы: <span id="wordleWins">0</span></div>
+            <div style="font-weight:700; font-size:18px;"><span data-i18n="wins">Победы</span>: <span id="wordleWins">0</span></div>
         </div>
         
         <div class="wordle-container">
@@ -1561,26 +1561,26 @@
 
     <!-- Referral Conditions Bottom Sheet -->
     <div class="bottom-sheet-overlay" id="referralConditionsSheet" onclick="hideReferralConditions()">
-        <div class="bottom-sheet" onclick="event.stopPropagation()">
-            <div class="bottom-sheet-handle"></div>
-            <div class="bottom-sheet-title">Условия реф. программы</div>
+        <div class="bottom-sheet" onclick="event.stopPropagation()" id="referralConditionsContent">
+            <div class="bottom-sheet-handle" id="referralConditionsHandle"></div>
+            <div class="bottom-sheet-title" data-i18n="conditionsTitle">Условия реф. программы</div>
             
             <div class="condition-item">
                 <div class="condition-number">1</div>
-                <div class="condition-text">Приглашайте друзей по вашей уникальной ссылке и соревнуйтесь в топе рефералов.</div>
+                <div class="condition-text" data-i18n="conditionsText">Приглашайте друзей по вашей уникальной ссылке и соревнуйтесь в топе рефералов.</div>
             </div>
             
             <div class="condition-item">
                 <div class="condition-number">2</div>
-                <div class="condition-text">Реферал закрепляется за вами навсегда при первом входе по ссылке.</div>
+                <div class="condition-text" data-i18n="refCondition2">Реферал закрепляется за вами навсегда при первом входе по ссылке.</div>
             </div>
             
             <div class="condition-item">
                 <div class="condition-number">3</div>
-                <div class="condition-text">В будущем возможна переработка системы с добавлением вознаграждений.</div>
+                <div class="condition-text" data-i18n="refCondition3">В будущем возможна переработка системы с добавлением вознаграждений.</div>
             </div>
             
-            <button class="btn-main" style="width:100%; margin-top:10px;" onclick="hideReferralConditions()">Понятно</button>
+            <button class="btn-main" style="width:100%; margin-top:10px;" onclick="hideReferralConditions()" data-i18n="gotIt">Понятно</button>
         </div>
     </div>
     
@@ -1662,14 +1662,14 @@
     <div class="subscription-overlay" id="subscriptionModal">
         <div class="subscription-modal">
             <div class="subscription-icon" id="subscriptionLottie"></div>
-            <div class="subscription-title">Подпишитесь на канал</div>
-            <div class="subscription-text">
+            <div class="subscription-title" data-i18n="subscribeChannel">Подпишитесь на канал</div>
+            <div class="subscription-text" data-i18n="subscribeText">
                 Чтобы играть, подпишитесь на наш новостной канал. Там только полезная информация о новых обновлениях и развитии приложения.
             </div>
-            <button class="subscription-btn primary" onclick="openChannel()">
+            <button class="subscription-btn primary" onclick="openChannel()" data-i18n="goToChannel">
                 Перейти на канал
             </button>
-            <button class="subscription-btn secondary" id="checkSubBtn" onclick="checkSubscription()">
+            <button class="subscription-btn secondary" id="checkSubBtn" onclick="checkSubscription()" data-i18n="checkSub">
                 Проверить подписку
             </button>
         </div>
@@ -2017,12 +2017,14 @@
                 privacy: 'Политика',
                 support: 'Поддержка',
                 profile: 'Профиль',
-                tops: 'Топы',
+                tops: 'Топ',
                 games: 'Игры',
                 myRecords: 'Мои рекорды',
                 referralProgram: 'Реферальная программа',
                 inviteFriends: 'Приглашайте друзей и поднимайтесь выше в топе',
                 conditions: 'Условия',
+                conditionsTitle: 'Условия реф. программы',
+                conditionsText: 'Приглашайте друзей по вашей уникальной ссылке и соревнуйтесь в топе рефералов.',
                 invite: 'Пригласить',
                 invited: 'Приглашено',
                 rankInTop: 'Место в топе',
@@ -2036,20 +2038,29 @@
                 referrals: 'Рефералы',
                 // Game UI
                 menu: 'Меню',
+                back: 'Назад',
                 newGame: 'Новая игра',
                 playAgain: 'Играть снова',
                 exit: 'Выйти',
+                start: 'Начать',
                 score: 'Счёт',
                 best: 'Лучший',
-                wins: 'Побед',
+                wins: 'Победы',
                 time: 'Время',
                 // Messages
                 newRecord: 'Новый Рекорд!',
                 recordNotBeat: 'Рекорд не побит',
-                tryAgain: 'Попробуйте еще раз!',
+                tryAgain: 'Попробуйте ещё раз!',
                 victory: 'Победа!',
                 defeat: 'Поражение',
                 draw: 'Ничья',
+                youWon: 'Вы победили!',
+                robotDefeated: 'Робот повержен.',
+                robotWon: 'Робот победил.',
+                whiteWon: 'Белые победили!',
+                blackWon: 'Чёрные победили!',
+                sudokuSolved: 'Судоку решено!',
+                towerFell: 'Башня упала',
                 // Minesweeper
                 dig: 'Копать',
                 flag: 'Флаг',
@@ -2058,7 +2069,23 @@
                 opponentTurn: 'Ход соперника',
                 white: 'Белые',
                 black: 'Чёрные',
-                // Leaderboard
+                waitingOpponent: 'Ожидание...',
+                roomCode: 'Код комнаты:',
+                shareCode: 'Передай этот код другу',
+                opponentDisconnected: 'Соперник отключился',
+                opponentTimeout: 'У соперника вышло время',
+                opponentLeft: 'Соперник вышел из игры',
+                // Leaderboard categories
+                totalGames: 'Всего игр',
+                numWins: 'Количество побед',
+                bestTime6: 'Лучшее время 6x6',
+                bestTime8: 'Лучшее время 8x8',
+                bestTime10: 'Лучшее время 10x10',
+                bestTime15: 'Лучшее время 15x15',
+                winsVsBot: 'Побед над роботом',
+                bestScore: 'Рекорд очков',
+                towerHeight: 'Высота башни',
+                cleanSeries: 'Чистая серия',
                 place: 'место',
                 points: 'очков',
                 gamesPlayed: 'игр',
@@ -2066,13 +2093,40 @@
                 foundUnfinished: 'Найдена незаконченная игра',
                 continue: 'Продолжить',
                 cancel: 'Отмена',
-                topsBlockBlast: 'Топы Блок Бласт',
-                topsMinesweeper: 'Топы Сапёр',
-                topsTower: 'Топы Башня',
-                topsSudoku: 'Топы Судоку',
-                topsCheckers: 'Топы Шашки',
-                topsWordle: 'Топы Вордли',
-                topsReferrals: 'Топы Рефералы'
+                close: 'Закрыть',
+                cool: 'Круто',
+                exitGame: 'Выйти из игры?',
+                exitConfirm: 'Вы уверены, что хотите выйти? Игра будет засчитана как поражение.',
+                yesExit: 'Да, выйти',
+                chooseDifficulty: 'Выберите сложность',
+                // Subscription
+                subscribeChannel: 'Подпишитесь на канал',
+                subscribeText: 'Чтобы играть, подпишитесь на наш новостной канал. Там только полезная информация о новых обновлениях и развитии приложения.',
+                goToChannel: 'Перейти на канал',
+                checkSub: 'Проверить подписку',
+                // Tops titles
+                topsBlockBlast: 'Топ Блок Бласт',
+                topsMinesweeper: 'Топ Сапёр',
+                topsTower: 'Топ Башня',
+                topsSudoku: 'Топ Судоку',
+                topsCheckers: 'Топ Шашки',
+                topsWordle: 'Топ Вордли',
+                topsReferrals: 'Топ Рефералы',
+                // Extra
+                tapToStart: 'Нажми, чтобы начать',
+                refCondition2: 'Реферал закрепляется за вами навсегда при первом входе по ссылке.',
+                refCondition3: 'В будущем возможна переработка системы с добавлением вознаграждений.',
+                gotIt: 'Понятно',
+                easy: 'Легко',
+                medium: 'Средне',
+                hard: 'Сложно',
+                chooseGameMode: 'Выберите режим игры',
+                twoPlayers: '2 Игрока',
+                vsRobot: 'С Роботом',
+                play: 'Играть',
+                findOpponent: 'Найти соперника',
+                join: 'Войти',
+                createRoom: 'Создать комнату'
             },
             en: {
                 settings: 'Settings',
@@ -2084,12 +2138,14 @@
                 privacy: 'Privacy',
                 support: 'Support',
                 profile: 'Profile',
-                tops: 'Leaderboards',
+                tops: 'Top',
                 games: 'Games',
                 myRecords: 'My Records',
                 referralProgram: 'Referral Program',
-                inviteFriends: 'Invite friends and climb the leaderboard',
+                inviteFriends: 'Invite friends and climb the top',
                 conditions: 'Terms',
+                conditionsTitle: 'Referral Terms',
+                conditionsText: 'Invite friends using your unique link and compete in the referral top.',
                 invite: 'Invite',
                 invited: 'Invited',
                 rankInTop: 'Rank in top',
@@ -2103,9 +2159,11 @@
                 referrals: 'Referrals',
                 // Game UI
                 menu: 'Menu',
+                back: 'Back',
                 newGame: 'New Game',
                 playAgain: 'Play Again',
                 exit: 'Exit',
+                start: 'Start',
                 score: 'Score',
                 best: 'Best',
                 wins: 'Wins',
@@ -2117,6 +2175,13 @@
                 victory: 'Victory!',
                 defeat: 'Defeat',
                 draw: 'Draw',
+                youWon: 'You won!',
+                robotDefeated: 'Robot defeated.',
+                robotWon: 'Robot won.',
+                whiteWon: 'White won!',
+                blackWon: 'Black won!',
+                sudokuSolved: 'Sudoku solved!',
+                towerFell: 'Tower fell',
                 // Minesweeper
                 dig: 'Dig',
                 flag: 'Flag',
@@ -2125,7 +2190,23 @@
                 opponentTurn: 'Opponent\'s turn',
                 white: 'White',
                 black: 'Black',
-                // Leaderboard
+                waitingOpponent: 'Waiting...',
+                roomCode: 'Room code:',
+                shareCode: 'Share this code with a friend',
+                opponentDisconnected: 'Opponent disconnected',
+                opponentTimeout: 'Opponent ran out of time',
+                opponentLeft: 'Opponent left the game',
+                // Leaderboard categories
+                totalGames: 'Total games',
+                numWins: 'Number of wins',
+                bestTime6: 'Best time 6x6',
+                bestTime8: 'Best time 8x8',
+                bestTime10: 'Best time 10x10',
+                bestTime15: 'Best time 15x15',
+                winsVsBot: 'Wins vs bot',
+                bestScore: 'Best score',
+                towerHeight: 'Tower height',
+                cleanSeries: 'Clean series',
                 place: 'place',
                 points: 'pts',
                 gamesPlayed: 'games',
@@ -2133,13 +2214,40 @@
                 foundUnfinished: 'Unfinished game found',
                 continue: 'Continue',
                 cancel: 'Cancel',
-                topsBlockBlast: 'Block Blast Leaderboard',
-                topsMinesweeper: 'Minesweeper Leaderboard',
-                topsTower: 'Tower Leaderboard',
-                topsSudoku: 'Sudoku Leaderboard',
-                topsCheckers: 'Checkers Leaderboard',
-                topsWordle: 'Wordle Leaderboard',
-                topsReferrals: 'Referrals Leaderboard'
+                close: 'Close',
+                cool: 'Cool',
+                exitGame: 'Exit game?',
+                exitConfirm: 'Are you sure you want to exit? The game will count as a loss.',
+                yesExit: 'Yes, exit',
+                chooseDifficulty: 'Choose difficulty',
+                // Subscription
+                subscribeChannel: 'Subscribe to channel',
+                subscribeText: 'To play, subscribe to our news channel. Only useful information about updates and app development.',
+                goToChannel: 'Go to channel',
+                checkSub: 'Check subscription',
+                // Tops titles
+                topsBlockBlast: 'Block Blast Top',
+                topsMinesweeper: 'Minesweeper Top',
+                topsTower: 'Tower Top',
+                topsSudoku: 'Sudoku Top',
+                topsCheckers: 'Checkers Top',
+                topsWordle: 'Wordle Top',
+                topsReferrals: 'Referrals Top',
+                // Extra
+                tapToStart: 'Tap to start',
+                refCondition2: 'Referral is assigned to you forever on first entry via link.',
+                refCondition3: 'In the future, the system may be reworked with rewards added.',
+                gotIt: 'Got it',
+                easy: 'Easy',
+                medium: 'Medium',
+                hard: 'Hard',
+                chooseGameMode: 'Choose game mode',
+                twoPlayers: '2 Players',
+                vsRobot: 'Vs Robot',
+                play: 'Play',
+                findOpponent: 'Find opponent',
+                join: 'Join',
+                createRoom: 'Create room'
             }
         };
         
@@ -2422,11 +2530,56 @@
         }
         
         function showReferralConditions() {
-            document.getElementById('referralConditionsSheet').classList.add('visible');
+            const overlay = document.getElementById('referralConditionsSheet');
+            const sheet = overlay.querySelector('.bottom-sheet');
+            overlay.classList.add('visible');
+            sheet.style.transform = '';
+            
+            // Add swipe listeners to handle
+            const handle = document.getElementById('referralConditionsHandle');
+            handle.addEventListener('touchstart', refSheetTouchStart, { passive: true });
+            handle.addEventListener('touchmove', refSheetTouchMove, { passive: false });
+            handle.addEventListener('touchend', refSheetTouchEnd);
+        }
+        
+        let refSheetStartY = 0;
+        let refSheetCurrentY = 0;
+        let refSheetDragging = false;
+        
+        function refSheetTouchStart(e) {
+            refSheetDragging = true;
+            refSheetStartY = e.touches[0].clientY;
+            const sheet = document.querySelector('#referralConditionsSheet .bottom-sheet');
+            sheet.style.transition = 'none';
+        }
+        
+        function refSheetTouchMove(e) {
+            if (!refSheetDragging) return;
+            e.preventDefault();
+            refSheetCurrentY = e.touches[0].clientY - refSheetStartY;
+            if (refSheetCurrentY < 0) refSheetCurrentY = 0;
+            const sheet = document.querySelector('#referralConditionsSheet .bottom-sheet');
+            sheet.style.transform = `translateY(${refSheetCurrentY}px)`;
+        }
+        
+        function refSheetTouchEnd() {
+            refSheetDragging = false;
+            const sheet = document.querySelector('#referralConditionsSheet .bottom-sheet');
+            sheet.style.transition = 'transform 0.3s ease';
+            
+            if (refSheetCurrentY > 100) {
+                hideReferralConditions();
+            } else {
+                sheet.style.transform = 'translateY(0)';
+            }
+            refSheetCurrentY = 0;
         }
         
         function hideReferralConditions() {
-            document.getElementById('referralConditionsSheet').classList.remove('visible');
+            const overlay = document.getElementById('referralConditionsSheet');
+            const sheet = overlay.querySelector('.bottom-sheet');
+            sheet.style.transition = 'transform 0.3s ease';
+            overlay.classList.remove('visible');
         }
         
         async function checkAndRegisterReferral() {
