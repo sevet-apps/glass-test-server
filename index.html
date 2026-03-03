@@ -159,6 +159,7 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; margin-top: 10px; } .app-title { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
         
         .card { background: var(--glass-bg); border-radius: 20px; border: 1px solid var(--glass-border); padding: 20px; margin-bottom: 15px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; transition: transform 0.2s; cursor: pointer; } .card:active { transform: scale(0.97); }
+        .tournament-banner { border-radius: 20px; overflow: hidden; margin-bottom: 15px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 20px rgba(0,0,0,0.15); } .tournament-banner:active { transform: scale(0.98); } .tournament-banner img { border-radius: 20px; }
         .card.disabled { cursor: default; opacity: 0.7; } .card.disabled:active { transform: none; }
         .game-icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; }
         
@@ -1258,6 +1259,11 @@
 
     <div id="view-games" class="screen active"> 
         <div class="header"> <div class="app-title" data-i18n="games">Игры</div> </div> 
+        
+        <!-- Tournament Banner -->
+        <div class="tournament-banner" onclick="openTournamentInfo()">
+            <img src="tournament-banner.png" alt="Tournament" style="width:100%; height:auto; display:block;">
+        </div>
         
         <div class="card" onclick="openGameModal('saper')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #007aff, #5ac8fa);"> <svg viewBox="0 0 24 24" fill="currentColor" style="width:26px;height:26px;"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/><path d="M12 7a5 5 0 1 0 5 5 5 5 0 0 0-5-5z"/></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="minesweeper">Сапёр</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
         <div class="card" onclick="openGameModal('checkers')"> <div class="game-icon-box" style="background: linear-gradient(135deg, #ff3b30, #ff9500);"> <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle></svg> </div> <div style="flex:1;"> <h3 style="margin:0; font-size:17px;" data-i18n="checkers">Шашки</h3> </div> <div style="color:var(--accent); font-weight:600;">Play</div> </div> 
@@ -2400,6 +2406,12 @@
             if(document.getElementById('view-profile').classList.contains('active')) {
                 loadProfile();
             }
+        }
+        
+        function openTournamentInfo() {
+            // Open tournament channel or show info
+            tg.openTelegramLink('https://t.me/glassappnews');
+            if(vibrationEnabled) tg.HapticFeedback.impactOccurred('light');
         }
         
         function openPrivacyPolicy() {
